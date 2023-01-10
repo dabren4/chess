@@ -24,13 +24,17 @@ class ChessPiece:
         self.symbol = symbol
         self.color = color
         self.pos = pos
-        self.x = square_size*pos[0] + 5
-        self.y = square_size*pos[1] + 5
+        self.x = square_size*pos[1] + 5
+        self.y = square_size*pos[0] + 5
     
-    def move(self, board):
-        pass
+    def can_move(self, board, place):
+        return True
 
-# Two-dimensional list to represent the chessboard
+    def updatePos(self, pos):
+        self.pos = pos
+        self.x = square_size*pos[1] + 5
+        self.y = square_size*pos[0] + 5
+
 #PLACE PIECES#
 board = [[None for i in range(8)] for j in range(8)]
 
@@ -43,7 +47,7 @@ board[0][5] = ChessPiece('B', 'white', (0, 5))
 board[0][6] = ChessPiece('N', 'white', (0, 6))
 board[0][7] = ChessPiece('R', 'white', (0, 7))
 for j in range(8):
-    board[1][j] = ChessPiece('P', 'white', (0, j))
+    board[1][j] = ChessPiece('P', 'white', (1, j))
 for j in range(8):
     board[6][j] = ChessPiece('p', 'black', (6, j))
 board[7][0] = ChessPiece('r', 'black', (7,0))

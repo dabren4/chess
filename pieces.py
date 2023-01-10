@@ -2,6 +2,10 @@
 The main intention of this file is to hold all the classes and info for each piece
 """
 
+from fen import parse_fen
+
+
+START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 "
 square_size = 80
 
 piece_images = {
@@ -12,12 +16,14 @@ piece_images = {
         'Q': 'white_pieces/white_queen.png',
         'K': 'white_pieces/white_king.png',
         'p': 'black_pieces/black_pawn.png',
-        'n': 'black_pieces/black_knight.png',
+        #'n': 'black_pieces/black_knight.png',
+        'n': 'black_pieces/imhashem.jpeg',
         'b': 'black_pieces/black_bishop.png',
         'r': 'black_pieces/black_rook.png',
         'q': 'black_pieces/black_queen.png',
         'k': 'black_pieces/black_king.png',
     }
+
 
 class ChessPiece:
     def __init__(self, symbol, color, pos):
@@ -32,30 +38,12 @@ class ChessPiece:
 
 # Two-dimensional list to represent the chessboard
 #PLACE PIECES#
-board = [[None for i in range(8)] for j in range(8)]
 
-board[0][0] = ChessPiece('R', 'white', (0, 0))
-board[0][1] = ChessPiece('N', 'white', (0, 1))
-board[0][2] = ChessPiece('B', 'white', (0, 2))
-board[0][3] = ChessPiece('Q', 'white', (0, 3))
-board[0][4] = ChessPiece('K', 'white', (0, 4))
-board[0][5] = ChessPiece('B', 'white', (0, 5))
-board[0][6] = ChessPiece('N', 'white', (0, 6))
-board[0][7] = ChessPiece('R', 'white', (0, 7))
+board = parse_fen(START)
+
 for j in range(8):
-    board[1][j] = ChessPiece('P', 'white', (0, j))
-for j in range(8):
-    board[6][j] = ChessPiece('p', 'black', (6, j))
-board[7][0] = ChessPiece('r', 'black', (7,0))
-board[7][1] = ChessPiece('n', 'black', (7,1))
-board[7][2] = ChessPiece('b', 'black', (7,2))
-board[7][3] = ChessPiece('q', 'black', (7,3))
-board[7][4] = ChessPiece('k', 'black', (7,4))
-board[7][5] = ChessPiece('b', 'black', (7,5))
-board[7][6] = ChessPiece('n', 'black', (7,6))
-board[7][7] = ChessPiece('r', 'black', (7,7))
+    for i in range(8):
+        symbol = board[i][j]
+        if not symbol: continue
+        board[i][j] = ChessPiece(symbol, 'white' if ord(symbol) > ord('A') else 'black', (j, i))
 
-
-
-
-        

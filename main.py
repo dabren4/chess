@@ -33,10 +33,10 @@ def play_chess():
         # Draw the board
         for i in range(8):
             for j in range(8):
-                color = (144, 238, 144) if (i + j) % 2 == 0 else (209,245,189)
+                color = (230,221,197) if (i + j) % 2 == 0 else (164,116,73)
                 pg.draw.rect(screen, color, (j * square_size, i * square_size, square_size, square_size))
                 piece = p.board[i][j]
-                if piece is not None:
+                if piece:
                     screen.blit(pg.transform.scale(pg.image.load(p.piece_images[piece.symbol]), (70, 70)), (piece.x, piece.y))
         # Update the display
         pg.display.flip()

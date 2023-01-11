@@ -1,11 +1,9 @@
+from fnmatch import translate
 import pygame as pg
 import sys
 import pieces as p
 import copy as c
-
-def print_board(board):
-    print([[p.symbol if p else "" for p in board[r]] for r in range(len(board))])
-
+from stockfish import Stockfish
 
 def play_chess():
     # Initialize Pygame
@@ -20,71 +18,41 @@ def play_chess():
     pg.display.set_caption(window_title)
 
     # Set the size of each square on the board
-    select_piece = None
-
+    select_piece = player_move = None
+    legal_move = True
+    player_turn = True
+    
     # Game loop
     while True:
-        for event in pg.event.get():
-            row, col = pg.mouse.get_pos()[1] // square_size, pg.mouse.get_pos()[0] // square_size
-            obj = p.board[row][col]
+        if not legal_move:
+            select_piece = None
+        legal_move = True
 
+        if player_turn:
+            for event in pg.event.get():
+                row, col = pg.mouse.get_pos()[1] // square_size, pg.mouse.get_pos()[0] // square_size
+                obj = p.board[row][col]
 
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if not select_piece:
-                    if obj:
-                        select_piece = obj
-                elif select_piece.can_move(p.board, (row, col)):
-                    #set new position to old
-                    p.board[row][col] = p.board[select_piece.pos[0]].pop(select_piece.pos[1])
-                    p.board[select_piece.pos[0]].insert(select_piece.pos[1], None)
-                    select_piece.updatePos((row,col))
-                    select_piece = None
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if not select_piece:
+                        if obj and obj.symbol.upper() == obj.symbol: #check if piece is white
+                            select_piece = obj
+                    elif select_piece.can_move(p.board, (row, col)):
+                        player_move = p.move_piece(select_piece, row, col)
+                        select_piece = None
+                        player_turn = False
+                    else:
+                        legal_move = False
+                p.check_quit(event, sys)
+        else:
+            move = p.translate_from(p.computer_move(player_move))
+            piece = p.board[move[0][0]][move[0][1]]
+            p.move_piece(piece, *move[1])
+            player_turn = True
 
-            if event.type == pg.QUIT:
-                    pg.quit()
-                    sys.exit()
-            elif event.type == pg.KEYDOWN:
-                if event.key == pg.K_ESCAPE:
-                    pg.quit()
-                    sys.exit()
-
-        # Draw the board
-        for i in range(8):
-            for j in range(8):
-                if select_piece and (i, j) == select_piece.pos:
-                    color = (100, 200, 100) 
-                elif (i + j) % 2 == 0:
-                    color = (144, 238, 144) 
-                else: 
-                    color = (209,245,189)
-                
-                pg.draw.rect(screen, color, (j * square_size, i * square_size, square_size, square_size))
-                piece = p.board[i][j]
-                if piece is not None:
-                    screen.blit(pg.transform.scale(pg.image.load(p.piece_images[piece.symbol]), (70, 70)), (piece.x, piece.y))
-
-        # Update the display
+        p.draw_board(screen, select_piece, legal_move)
         pg.display.flip()
-
-
-            
-
 
 if __name__ == "__main__":
     play_chess()
-
-    """elif event.type == pg.MOUSEBUTTONUP:
-        # Check if a piece is selected
-        if selected_piece is not None:
-            # Check if the piece can move to the destination square
-            if selected_piece.can_move(mouse_square):
-                # Move the piece to the destination square
-                board[][mouse_square[1]] = selected_piece
-                board[selected_piece_initial_pos[0]][selected_piece_initial_pos[1]] = None
-                # Deselect the piece
-                selected_piece = None
-                selected_piece_initial_pos = None
-            else:
-                # Deselect the piece
-                selected_piece = None
-                selected_piece_initial_pos = None"""
+    

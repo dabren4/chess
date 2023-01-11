@@ -7,7 +7,7 @@ from stockfish import Stockfish
 """
 INSTANCES
 """
-stockfish = Stockfish(path="/opt/homebrew/bin/stockfish")
+stockfish = Stockfish(path="/usr/games/stockfish")
 prev_moves = []
 square_size = 80
 
@@ -89,8 +89,24 @@ class Pawn(ChessPiece):
         super().__init__(color, pos)
         self.symbol = 'P' if color == 'white' else 'p'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, pos, depth):
+        x, y = pos
+        legal_move = []
+        if depth == 0:
+            if x == 1:
+                # If the pawn is in the starting position 
+                legal_move.append((x - 2, y))
+                legal_move.append((x - 1, y))
+            
+            elif x > 0:
+                # If the pawn is not in the starting position or at the end of the board
+                legal_move.append((x - 1, y))
+                if y > 0 and board[x - 1][y - 1] != "piece": # Need to fix "piece" to represent if there's a piece there
+                    legal_move.append((x - 1, y - 1))
+                if y < 7 and board[x - 1][y + 1] != "piece": # ^^
+                    legal_move.append((x - 1, y + 1))
+
+
 
 board = [[None for _ in range(8)] for _ in range(8)]
 

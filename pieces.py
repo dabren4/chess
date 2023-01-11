@@ -2,15 +2,13 @@
 The main intention of this file is to hold all the classes and info for each piece
 """
 import pygame as pg
-import random as r
 from stockfish import Stockfish
 
 """
 INSTANCES
 """
 stockfish = Stockfish(path="/opt/homebrew/bin/stockfish")
-prev_computer = []
-prev_player = []
+prev_moves = []
 square_size = 80
 
 """
@@ -35,48 +33,92 @@ black_pieces = {'p', 'n', 'r', 'q', 'k', 'b'}
 white_pieces = {'P', 'N', 'B', 'R', 'Q', 'K'}
 
 class ChessPiece:
-    def __init__(self, symbol, color, pos):
-        self.symbol = symbol
+    def __init__(self, color, pos):
         self.color = color
         self.pos = pos
         self.x = square_size*pos[1] + 5
         self.y = square_size*pos[0] + 5
-    
-    def can_move(self, board, place):
-        return True
-
+        
     def updatePos(self, pos):
         self.pos = pos
         self.x = square_size*pos[1] + 5
         self.y = square_size*pos[0] + 5
 
-board = [[None for i in range(8)] for j in range(8)]
+class King(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'K' if color == 'white' else 'k'
+    
+    def get_possible(self):
+        pass
 
-board[7][0] = ChessPiece('R', 'white', (7,0))
-board[7][1] = ChessPiece('N', 'white', (7,1))
-board[7][2] = ChessPiece('B', 'white', (7,2))
-board[7][3] = ChessPiece('Q', 'white', (7,3))
-board[7][4] = ChessPiece('K', 'white', (7,4))
-board[7][5] = ChessPiece('B', 'white', (7,5))
-board[7][6] = ChessPiece('N', 'white', (7,6))
-board[7][7] = ChessPiece('R', 'white', (7,7))
+class Queen(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'Q' if color == 'white' else 'q'
+    
+    def get_possible(self):
+        pass
+
+class Bishop(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'B' if color == 'white' else 'b'
+    
+    def get_possible(self):
+        pass
+
+class Rook(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'R' if color == 'white' else 'r'
+    
+    def get_possible(self):
+        pass
+
+class Knight(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'N' if color == 'white' else 'n'
+    
+    def get_possible(self):
+        pass
+
+class Pawn(ChessPiece):
+    def __init__(self, color, pos):
+        super().__init__(color, pos)
+        self.symbol = 'P' if color == 'white' else 'p'
+    
+    def get_possible(self):
+        pass
+
+board = [[None for _ in range(8)] for _ in range(8)]
+
+board[7][0] = Rook('white', (7,0))
+board[7][1] = Knight('white', (7,1))
+board[7][2] = Bishop('white', (7,2))
+board[7][3] = Queen('white', (7,3))
+board[7][4] = King('white', (7,4))
+board[7][5] = Bishop('white', (7,5))
+board[7][6] = Knight('white', (7,6))
+board[7][7] = Rook('white', (7,7))
 for j in range(8):
-    board[6][j] = ChessPiece('P', 'white', (6, j))
+    board[6][j] = Pawn('white', (6, j))
 for j in range(8):
-    board[1][j] = ChessPiece('p', 'black', (1, j))
-board[0][0]= ChessPiece('r', 'black', (0, 0))
-board[0][1]= ChessPiece('n', 'black', (0, 1))
-board[0][2]= ChessPiece('b', 'black', (0, 2))
-board[0][3]= ChessPiece('q', 'black', (0, 3))
-board[0][4]= ChessPiece('k', 'black', (0, 4))
-board[0][5]= ChessPiece('b', 'black', (0, 5))
-board[0][6]= ChessPiece('n', 'black', (0, 6))
-board[0][7]= ChessPiece('r', 'black', (0, 7))
+    board[1][j] = Pawn('black', (1, j))
+board[0][0]= Rook('black', (0, 0))
+board[0][1]= Knight('black', (0, 1))
+board[0][2]= Bishop('black', (0, 2))
+board[0][3]= Queen('black', (0, 3))
+board[0][4]= King('black', (0, 4))
+board[0][5]= Bishop('black', (0, 5))
+board[0][6]= Knight('black', (0, 6))
+board[0][7]= Rook('black', (0, 7))
 
 """
 HELPER FUNCTIONS
 """
-def draw_board(screen, select_piece, legal_move):
+def draw_board(screen, select_piece, possible_moves):
     """
     Parameters:
         screen: Surface pygame object to be drawn
@@ -87,10 +129,10 @@ def draw_board(screen, select_piece, legal_move):
     """
     for i in range(8):
         for j in range(8):
-            if select_piece and (i,j) == select_piece.pos:
-                if legal_move:
-                    color = (100, 200, 100)
-                else:
+            if select_piece:
+                if (i,j) == select_piece.pos:
+                    color = (255, 0, 0)
+                elif (i,j) in possible_moves:
                     color = (255, 0, 0)
             elif (i + j) % 2 == 0:
                 color = (144, 238, 144) 
@@ -110,8 +152,6 @@ def move_piece(select_piece, row, col):
     Purpose:
         Moves select_piece object to (row, col) in the board representation
     """
-    print(row, col)
-    obj = board[row][col]
     #set new position to old and pop select piece position 
     board[row][col] = board[select_piece.pos[0]].pop(select_piece.pos[1])
     #insert None into old spot because will always 
@@ -164,7 +204,7 @@ def computer_move(player_move):
     Purpose:
         - Generate a best move for the CPU to play using a history of user and CPU moves
     """
-    prev_player.append(player_move)
+    prev_moves.append(player_move)
     stockfish.make_moves_from_current_position([prev_computer[-1], prev_player[-1]] if prev_computer else [prev_player[-1]])
     prev_computer.append(stockfish.get_best_move())
     return prev_computer[-1] 

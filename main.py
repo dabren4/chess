@@ -1,11 +1,12 @@
-from fnmatch import translate
 import pygame as pg
 import sys
 import pieces as p
-import copy as c
-from stockfish import Stockfish
 
 def play_chess():
+    """
+    Purpose:
+        - Initialize chess game
+    """
     # Initialize Pygame
     pg.init()
 
@@ -24,8 +25,8 @@ def play_chess():
     
     # Game loop
     while True:
-        if not legal_move:
-            select_piece = None
+        #This resets the legal move conditional variable
+        if not legal_move: select_piece = None
         legal_move = True
 
         if player_turn:
@@ -34,18 +35,18 @@ def play_chess():
                 obj = p.board[row][col]
 
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    if not select_piece:
-                        if obj and obj.symbol.upper() == obj.symbol: #check if piece is white
-                            select_piece = obj
-                    elif select_piece.can_move(p.board, (row, col)):
+                    if obj and obj.symbol in p.white_pieces: #check if piece is white
+                        select_piece = obj
+                    elif select_piece.can_move(p.board, (row, col)): #this condition is if we select an empty square or black piece
                         player_move = p.move_piece(select_piece, row, col)
                         select_piece = None
                         player_turn = False
-                    else:
+                    else: #We made an illegal move
                         legal_move = False
                 p.check_quit(event, sys)
         else:
-            move = p.translate_from(p.computer_move(player_move))
+            # This is the computer's turn
+            move = p.translate_from(p.computer_move(player_move)) 
             piece = p.board[move[0][0]][move[0][1]]
             p.move_piece(piece, *move[1])
             player_turn = True

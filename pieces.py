@@ -22,7 +22,51 @@ def create_piece(symbol, position):
     else:
         return
 
+def create_piece(symbol, position):
+
+    if not symbol.isalpha():
+        return
+    color = 'white' if ord(symbol) < ord('Z') else 'black'
+         
+    if symbol.lower() == 'p':
+        return Pawn(color, position)
+    elif symbol.lower() == 'r':
+        return Rook(color, position)
+    elif symbol.lower() == 'b':
+        return Bishop(color, position)
+    elif symbol.lower() == 'n':
+        return Knight(color, position)
+    elif symbol.lower() == 'q':
+        return Queen(color, position)
+    elif symbol.lower() == 'k':
+        return King(color, position)
+    else:
+        return
+
+def create_piece(symbol, position):
+
+    if not symbol.isalpha():
+        return
+    color = 'white' if ord(symbol) < ord('Z') else 'black'
+         
+    if symbol.lower() == 'p':
+        return Pawn(color, position)
+    elif symbol.lower() == 'r':
+        return Rook(color, position)
+    elif symbol.lower() == 'b':
+        return Bishop(color, position)
+    elif symbol.lower() == 'n':
+        return Knight(color, position)
+    elif symbol.lower() == 'q':
+        return Queen(color, position)
+    elif symbol.lower() == 'k':
+        return King(color, position)
+    else:
+        return
+
 class ChessPiece:
+    def __init__(self, color, pos, symbol=''):
+
     def __init__(self, color, pos, symbol=''):
 
         self.color = color
@@ -209,5 +253,9 @@ class Pawn(ChessPiece):
 
 
 
+
+
+
+    
 
     

@@ -1,6 +1,8 @@
 import pieces as p
 import main as m
 import pygame as pg
+from fen import parse_fen, START
+
 
 LIGHT_RED = (255, 154, 154)
 LIGHT_GREEN = (183, 255, 183) 
@@ -14,32 +16,14 @@ class Vector(tuple):
 
 class Board:
     def __init__(self):
-        self.board = [[None for _ in range(8)] for _ in range(8)]
-        """
-        self.board[7][0] = p.Rook('white', Vector((7,0)))
-        self.board[7][1] = p.Knight('white', Vector((7,1)))
-        self.board[7][2] = p.Bishop('white', Vector((7,2)))
-        self.board[7][3] = p.Queen('white', Vector((7,3)))
-        self.board[7][4] = p.King('white', Vector((7,4)))
-        self.board[7][5] = p.Bishop('white',Vector((7,5)))
-        self.board[7][6] = p.Knight('white', Vector((7,6)))
-        self.board[7][7] = p.Rook('white', Vector((7,7)))
-        for j in range(8):
-            self.board[6][j] = p.Pawn('white', Vector((6, j)))
-        for j in range(8):
-            self.board[1][j] = p.Pawn('black', Vector((1, j)))
-        self.board[0][0]= p.Rook('black', Vector((0, 0)))
-        self.board[0][1]= p.Knight('black', Vector((0, 1)))
-        self.board[0][2]= p.Bishop('black', Vector((0, 2)))
-        self.board[0][3]= p.Queen('black', Vector((0, 3)))
-        self.board[0][4]= p.King('black', Vector((0, 4)))
-        self.board[0][5]= p.Bishop('black', Vector((0, 5)))
-        self.board[0][6]= p.Knight('black', Vector((0, 6)))
-        self.board[0][7]= p.Rook('black', Vector((0, 7)))
-        """
-        self.board[4][3] = p.Pawn('black', Vector((4, 3)))
-        self.board[6][4] = p.Pawn('white', Vector((6, 4)))
-        self.board[5][5] = p.Pawn('white', Vector((5, 5)))
+
+        self.board = parse_fen(START)
+
+        for i in range(8):
+            for j in range(8):
+                symbol = self.board[i][j]
+                self.board[i][j] = p.create_piece(symbol, Vector((i, j)))
+            
         
 
     def draw_board(self, screen, select_piece, possible_moves):

@@ -24,7 +24,7 @@ BLACK_PIECES = {'p', 'n', 'r', 'q', 'k', 'b'}
 WHITE_PIECES = {'P', 'N', 'B', 'R', 'Q', 'K'}
 
 class Chess:
-    def __init__(self):
+    def __init__(self, pvp):
         """
         ##################
         IMPORTANT!!!!
@@ -32,49 +32,53 @@ class Chess:
         We could have stuff like difficulty, mode and other options that we can feed into this constructor
         That way we can initialize different Chess games based on user input
         """
-
-    def p_vs_cpu(self):
-        """
-        Purpose:
-            - Initialize chess game
-        """
         # Initialize Pygame
         pg.init()
-        screen = pg.display.set_mode(WINDOW_SIZE)
+        self.screen = pg.display.set_mode(WINDOW_SIZE)
         pg.display.set_caption(WINDOW_TITLE)
 
-        board_obj = b.Board()
-        board = board_obj.board
-        cpu = c.CPU()
+        self.board_obj = b.Board()
+        self.board = self.board_obj.board
+        self.cpu = c.CPU()
 
+        self.pvp = pvp
+        self.history = []
+
+    def p_vs_cpu(self):
         # Set the size of each square on the board
-        select_piece = player_move = None
-        player_turn = True
+        
+        select_piece = None
+        white_turn = True
         possible_moves = None
-        passant = None
+        passant = [None, None]
         
         # Game loop
         while True:
-            if True:
+            if self.pvp or white_turn:
                 for event in pg.event.get():
+                    #get mouse info
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
-                    obj = board[row][col]
+                    obj = self.board[row][col]
                     if event.type == pg.MOUSEBUTTONDOWN:
-                        print(passant)
-                        if obj and obj.symbol: #in WHITE_PIECES: # check if piece is white
-                            select_piece = obj
-                            possible_moves = select_piece.get_possible(board, passant)
-                        elif select_piece and (row, col) in possible_moves: # this condition is if we select an empty square or black piece
-                            player_move, passant = select_piece.move(board, row, col)
-                            possible_moves = select_piece = None
-                            player_turn = False
+                        if obj and obj.symbol in (BLACK_PIECES, WHITE_PIECES)[white_turn]:
+                            #SELECTING A PIECE
+                            select_piece = obj #change select piece into the obj of choice
+                            possible_moves = select_piece.get_possible(self.board, passant) # get possible moves for piece
+                        elif select_piece and (row, col) in possible_moves: 
+                            #MAKING A MOVE
+                            move = select_piece.move(self.board, row, col) # move the selected piece and store info
+                            self.history.append(move[0]) #append translated move info to history
+                            passant[white_turn] = move[1] # add passant to list if a pawn had start move
+                            possible_moves = select_piece = None # set these to None because we're moving onto next turn
+                            white_turn = not white_turn #change the turn 
                     self.check_quit(event, sys)
-            else:
-                move = self.translate_from(cpu.computer_move(player_move)) 
-                board[move[0][0]][move[0][1]].move(board, *move[1], passant)
-                player_turn = True ## MAKE INTO COUNTER TO STORE NUMBER OF MOVES PLAYED??
-
-            board_obj.draw_board(screen, select_piece, possible_moves)
+            elif not self.pvp and not white_turn:
+                move = self.cpu.computer_move(self.history[-2:] if len(self.history) > 1 else self.history)
+                self.history.append(move) #append the translated move to history 
+                move = self.translate_from(move)
+                passant.append(self.board[move[0][0]][move[0][1]].move(self.board, *move[1])[1])
+                white_turn = not white_turn
+            self.board_obj.draw_board(self.screen, select_piece, possible_moves)
             pg.display.flip()
 
     def translate_from(self, str):
@@ -104,4 +108,4 @@ class Chess:
                 sys.exit()
 
 if __name__ == "__main__": 
-    Chess().p_vs_cpu()
+    Chess(False).p_vs_cpu()

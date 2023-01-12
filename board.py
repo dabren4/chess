@@ -15,7 +15,7 @@ class Vector(tuple):
 class Board:
     def __init__(self):
         self.board = [[None for _ in range(8)] for _ in range(8)]
-        """
+        
         self.board[7][0] = p.Rook('white', Vector((7,0)))
         self.board[7][1] = p.Knight('white', Vector((7,1)))
         self.board[7][2] = p.Bishop('white', Vector((7,2)))
@@ -36,10 +36,6 @@ class Board:
         self.board[0][5]= p.Bishop('black', Vector((0, 5)))
         self.board[0][6]= p.Knight('black', Vector((0, 6)))
         self.board[0][7]= p.Rook('black', Vector((0, 7)))
-        """
-        self.board[4][3] = p.Pawn('black', Vector((4, 3)))
-        self.board[6][4] = p.Pawn('white', Vector((6, 4)))
-        self.board[5][5] = p.Pawn('white', Vector((5, 5)))
         
 
     def draw_board(self, screen, select_piece, possible_moves):

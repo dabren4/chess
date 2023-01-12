@@ -22,12 +22,11 @@ class ChessPiece:
         Purpose:
             Moves select_piece object to (row, col) in the board representation
         """
-        passant = False #If deciding to move a piece, this removes the passant possibility (unless we are making 2v2)
+        passant = None #If deciding to move a piece, this removes the passant possibility (unless we are making 2v2)
         temp = board[self.pos[0]].pop(self.pos[1]) # has to be in this order otherwise indexing gets messed up
         board[self.pos[0]].insert(self.pos[1], None)
         board[row][col] = temp
         if type(self) is Pawn and abs(self.pos[0] - row) == 2: 
-            print("HERE")
             passant = self #this sets up the passant move 
         player_move = self.translate_to(self.pos, b.Vector((row, col)))
         self.update_pos(b.Vector((row,col)))
@@ -58,7 +57,7 @@ class King(ChessPiece):
             check = cur
             if 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if not check_obj or check_obj.color == 'black': 
+                if not check_obj or check_obj.color != self.color: 
                     possible.add(self.pos + check)
                     check += cur
         return possible
@@ -77,10 +76,10 @@ class Queen(ChessPiece):
             check = cur
             while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if check_obj and check_obj.color == 'white': break
+                if check_obj and check_obj.color == self.color: break
                 possible.add(self.pos + check)
                 check += cur
-                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+                if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
         return possible
 
 class Bishop(ChessPiece):
@@ -96,10 +95,10 @@ class Bishop(ChessPiece):
             check = cur
             while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if check_obj and check_obj.color == 'white': break
+                if check_obj and check_obj.color == self.color: break
                 possible.add(self.pos + check)
                 check += cur
-                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+                if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
         return possible
 
 class Rook(ChessPiece):
@@ -115,11 +114,10 @@ class Rook(ChessPiece):
             check = cur
             while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if check_obj and check_obj.color == 'white': break
+                if check_obj and check_obj.color == self.color: break
                 possible.add(self.pos + check)
                 check += cur
-                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
-        print(possible)
+                if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
         return possible
 
 class Knight(ChessPiece):
@@ -135,7 +133,7 @@ class Knight(ChessPiece):
             check = cur
             if 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if not check_obj or check_obj.color == 'black': 
+                if not check_obj or check_obj.color != self.color: 
                     possible.add(self.pos + check)
                     check += cur
         return possible
@@ -173,8 +171,8 @@ class Pawn(ChessPiece):
         #passant
         if passant:
             l, r = self.pos + (0, -1), self.pos + (0, 1) #checks if passant is next to the pawn
-            if board[l[0]][l[1]] == passant: possible_moves.add(l_dag)
-            if board[r[0]][r[1]] == passant: possible_moves.add(r_dag)
+            if passant[white] and board[l[0]][l[1]] == passant[white]: possible_moves.add(l_dag)
+            if passant[white] and board[r[0]][r[1]] == passant[white]: possible_moves.add(r_dag)
         
         return possible_moves
         

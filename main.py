@@ -1,7 +1,5 @@
-from tkinter import NONE
 import pygame as pg
 import sys
-import pieces as p
 import board as b
 import cpu as c
 
@@ -61,12 +59,13 @@ class Chess:
                 for event in pg.event.get():
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
                     obj = board[row][col]
-
                     if event.type == pg.MOUSEBUTTONDOWN:
+                        print(obj, row, col)
+                        print(board)
                         if obj and obj.symbol in WHITE_PIECES: # check if piece is white
                             select_piece = obj
                             possible_moves = select_piece.get_possible(board, passant)
-                        elif (row, col) in possible_moves: # this condition is if we select an empty square or black piece
+                        elif select_piece and (row, col) in possible_moves: # this condition is if we select an empty square or black piece
                             player_move = select_piece.move(board, row, col, passant)
                             possible_moves = select_piece = None
                             player_turn = False

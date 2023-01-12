@@ -27,8 +27,9 @@ class ChessPiece:
             Moves select_piece object to (row, col) in the board representation
         """
         passant = False #If deciding to move a piece, this removes the passant possibility (unless we are making 2v2)
-        board[row][col] = board[self.pos[0]].pop(self.pos[1])
+        temp = board[self.pos[0]].pop(self.pos[1]) # has to be in this order otherwise indexing gets messed up
         board[self.pos[0]].insert(self.pos[1], None)
+        board[row][col] = temp
         if type(self) is Pawn and abs(self.pos[0] - row) == 2: passant = self #this sets up the passant move 
         player_move = self.translate_to(self.pos, b.Vector((row, col)))
         self.update_pos(b.Vector((row,col)))
@@ -120,6 +121,7 @@ class Rook(ChessPiece):
                 possible.add(self.pos + check)
                 check += cur
                 if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+        print(possible)
         return possible
 
 class Knight(ChessPiece):
@@ -163,10 +165,14 @@ class Pawn(ChessPiece):
 
             #overtake 
             l_dag, r_dag = self.pos + (-1, -1), self.pos + (-1, 1)
-            piece = board[l_dag[0]][l_dag[1]]
-            if piece and self.color != piece.color: possible_moves.add(l_dag)
-            piece = board[r_dag[0]][r_dag[1]]
-            if piece and self.color != piece.color: possible_moves.add(r_dag)
+            print(l_dag)
+
+            if 0 <= l_dag[1] < 8:
+                piece = board[l_dag[0]][l_dag[1]]
+                if piece and self.color != piece.color: possible_moves.add(l_dag)
+            if 0 <= r_dag[1] < 8:
+                piece = board[r_dag[0]][r_dag[1]]
+                if piece and self.color != piece.color: possible_moves.add(r_dag)
 
             #passant
             if passant:

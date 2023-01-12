@@ -36,6 +36,7 @@ class Board:
         self.board[0][5]= p.Bishop('black', Vector((0, 5)))
         self.board[0][6]= p.Knight('black', Vector((0, 6)))
         self.board[0][7]= p.Rook('black', Vector((0, 7)))
+        
 
     def draw_board(self, screen, select_piece, possible_moves):
         """

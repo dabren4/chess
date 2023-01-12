@@ -51,40 +51,94 @@ class King(ChessPiece):
         super().__init__(color, pos)
         self.symbol = 'K' if color == 'white' else 'k'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, board, passant):
+        possible = set()
+        deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
+        while deltas:
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            if 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if not check_obj or check_obj.color == 'black': 
+                    possible.add(self.pos + check)
+                    check += cur
+        return possible
+
 
 class Queen(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'Q' if color == 'white' else 'q'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, board, passant):
+        possible = set()
+        deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
+        while deltas:
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if check_obj and check_obj.color == 'white': break
+                possible.add(self.pos + check)
+                check += cur
+                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+        return possible
 
 class Bishop(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'B' if color == 'white' else 'b'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, board, passant):
+        possible = set()
+        deltas = [(1,-1), (1, 1), (-1, -1), (-1, 1)]
+        while deltas:
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if check_obj and check_obj.color == 'white': break
+                possible.add(self.pos + check)
+                check += cur
+                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+        return possible
 
 class Rook(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'R' if color == 'white' else 'r'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, board, passant):
+        possible = set()
+        deltas = [(0,-1), (0, 1), (-1, 0), (1, 0)]
+        while deltas:
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if check_obj and check_obj.color == 'white': break
+                possible.add(self.pos + check)
+                check += cur
+                if check_obj and check_obj.color == 'black': break # break after add because we can overtake black
+        return possible
 
 class Knight(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'N' if color == 'white' else 'n'
     
-    def get_possible(self):
-        pass
+    def get_possible(self, board, passant):
+        possible = set()
+        deltas = [(-1,-2), (-2,-1), (-2, 1), (-1, 2), (1, 2), (2, -1), (2, 1), (1, -2)]
+        while deltas:
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            if 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if not check_obj or check_obj.color == 'black': 
+                    possible.add(self.pos + check)
+                    check += cur
+        return possible
 
 class Pawn(ChessPiece):
     def __init__(self, color, pos):

@@ -55,18 +55,17 @@ class Chess:
         
         # Game loop
         while True:
-            if player_turn:
+            if True:
                 for event in pg.event.get():
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
                     obj = board[row][col]
                     if event.type == pg.MOUSEBUTTONDOWN:
-                        print(obj, row, col)
-                        print(board)
-                        if obj and obj.symbol in WHITE_PIECES: # check if piece is white
+                        print(passant)
+                        if obj and obj.symbol: #in WHITE_PIECES: # check if piece is white
                             select_piece = obj
                             possible_moves = select_piece.get_possible(board, passant)
                         elif select_piece and (row, col) in possible_moves: # this condition is if we select an empty square or black piece
-                            player_move = select_piece.move(board, row, col, passant)
+                            player_move, passant = select_piece.move(board, row, col)
                             possible_moves = select_piece = None
                             player_turn = False
                     self.check_quit(event, sys)
@@ -105,6 +104,4 @@ class Chess:
                 sys.exit()
 
 if __name__ == "__main__": 
-
     Chess().p_vs_cpu()
-    

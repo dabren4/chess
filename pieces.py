@@ -1,8 +1,5 @@
-import pygame as pg
-from stockfish import Stockfish
 import board as b
 import main as m
-
 
 class ChessPiece:
     def __init__(self, color, pos):
@@ -10,14 +7,13 @@ class ChessPiece:
         self.pos = pos
         self.x = m.SQUARE_SIZE*pos[1] + 5
         self.y = m.SQUARE_SIZE*pos[0] + 5
-        
-                
+           
     def update_pos(self, pos):
         self.pos = pos
         self.x = m.SQUARE_SIZE*pos[1] + 5
         self.y = m.SQUARE_SIZE*pos[0] + 5
     
-    def move(self, board, row, col, passant):
+    def move(self, board, row, col):
         """
         Parameters:
             select_piece: piece object that is the selected (previous) piece that will be moved
@@ -30,10 +26,12 @@ class ChessPiece:
         temp = board[self.pos[0]].pop(self.pos[1]) # has to be in this order otherwise indexing gets messed up
         board[self.pos[0]].insert(self.pos[1], None)
         board[row][col] = temp
-        if type(self) is Pawn and abs(self.pos[0] - row) == 2: passant = self #this sets up the passant move 
+        if type(self) is Pawn and abs(self.pos[0] - row) == 2: 
+            print("HERE")
+            passant = self #this sets up the passant move 
         player_move = self.translate_to(self.pos, b.Vector((row, col)))
         self.update_pos(b.Vector((row,col)))
-        return player_move
+        return (player_move, passant)
     
     def translate_to(self, from_place, to_place):
         """
@@ -150,39 +148,36 @@ class Pawn(ChessPiece):
     
     def get_possible(self, board, passant):
         possible_moves = set()
-        if self.color == 'white':
-            #first move forward two squares
-            if self.pos[0] == 6: 
-                check = self.pos + (-2, 0)
-                if not board[check[0]][check[1]]: 
-                    possible_moves.add(check)
-            
-            #regular pawn move
-            check = self.pos + (-1, 0)
+        white = self.color == 'white'
+        #first move forward two squares
+        if self.pos[0] == (1, 6)[white]: 
+            check = self.pos + ((2,-2)[white], 0)
             if not board[check[0]][check[1]]: 
                 possible_moves.add(check)
-                self.passant = False
+        
+        #regular pawn move
+        check = self.pos + ((1,-1)[white], 0)
+        if not board[check[0]][check[1]]: 
+            possible_moves.add(check)
+            self.passant = False
 
-            #overtake 
-            l_dag, r_dag = self.pos + (-1, -1), self.pos + (-1, 1)
-            print(l_dag)
+        #overtake 
+        l_dag, r_dag = self.pos + ((1,-1)[white], -1), self.pos + ((1,-1)[white], 1)
+        if 0 <= l_dag[1] < 8:
+            piece = board[l_dag[0]][l_dag[1]]
+            if piece and self.color != piece.color: possible_moves.add(l_dag)
+        if 0 <= r_dag[1] < 8:
+            piece = board[r_dag[0]][r_dag[1]]
+            if piece and self.color != piece.color: possible_moves.add(r_dag)
 
-            if 0 <= l_dag[1] < 8:
-                piece = board[l_dag[0]][l_dag[1]]
-                if piece and self.color != piece.color: possible_moves.add(l_dag)
-            if 0 <= r_dag[1] < 8:
-                piece = board[r_dag[0]][r_dag[1]]
-                if piece and self.color != piece.color: possible_moves.add(r_dag)
-
-            #passant
-            if passant:
-                l, r = self.pos + (0, -1), self.pos + (0, 1) #checks if passant is next to the pawn
-                if board[l[0]][l[1]] == passant: possible_moves.add(l_dag)
-                if board[r[0]][r[1]] == passant: possible_moves.add(l_dag)
-            
-            return possible_moves
-
-
+        #passant
+        if passant:
+            l, r = self.pos + (0, -1), self.pos + (0, 1) #checks if passant is next to the pawn
+            if board[l[0]][l[1]] == passant: possible_moves.add(l_dag)
+            if board[r[0]][r[1]] == passant: possible_moves.add(r_dag)
+        
+        return possible_moves
+        
 
 
 

@@ -2,7 +2,7 @@ from stockfish import Stockfish
 
 class CPU:
     def __init__(self):
-        self.stockfish = Stockfish(path="/opt/homebrew/bin/stockfish")
+        self.stockfish = Stockfish(path="/usr/games/stockfish")
     
     def computer_move(self, history):
         """

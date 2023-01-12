@@ -12,31 +12,17 @@ class Vector(tuple):
     def __add__(self, a):
         return Vector(x + y for x, y in zip(self, a))
 
+START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 "
+
 class Board:
     def __init__(self):
-        self.board = [[None for _ in range(8)] for _ in range(8)]
         
-        self.board[7][0] = p.Rook('white', Vector((7,0)))
-        self.board[7][1] = p.Knight('white', Vector((7,1)))
-        self.board[7][2] = p.Bishop('white', Vector((7,2)))
-        self.board[7][3] = p.Queen('white', Vector((7,3)))
-        self.board[7][4] = p.King('white', Vector((7,4)))
-        self.board[7][5] = p.Bishop('white',Vector((7,5)))
-        self.board[7][6] = p.Knight('white', Vector((7,6)))
-        self.board[7][7] = p.Rook('white', Vector((7,7)))
-        for j in range(8):
-            self.board[6][j] = p.Pawn('white', Vector((6, j)))
-        for j in range(8):
-            self.board[1][j] = p.Pawn('black', Vector((1, j)))
-        self.board[0][0]= p.Rook('black', Vector((0, 0)))
-        self.board[0][1]= p.Knight('black', Vector((0, 1)))
-        self.board[0][2]= p.Bishop('black', Vector((0, 2)))
-        self.board[0][3]= p.Queen('black', Vector((0, 3)))
-        self.board[0][4]= p.King('black', Vector((0, 4)))
-        self.board[0][5]= p.Bishop('black', Vector((0, 5)))
-        self.board[0][6]= p.Knight('black', Vector((0, 6)))
-        self.board[0][7]= p.Rook('black', Vector((0, 7)))
-        
+        self.board = parse_fen(START)
+
+        for i in range(8):
+            for j in range(8):
+                symbol = self.board[i][j]
+                self.board[i][j] = p.create_piece(symbol, Vector((i, j)))
 
     def draw_board(self, screen, select_piece, possible_moves):
         """
@@ -47,6 +33,10 @@ class Board:
         Purpose:
             Draws the board
         """
+
+
+
+        
         color = None
         for i in range(8):
             for j in range(8):
@@ -62,3 +52,36 @@ class Board:
                 piece = self.board[i][j]
                 if piece is not None:
                     screen.blit(pg.transform.scale(pg.image.load(m.PIECE_IMAGES[piece.symbol]), (70, 70)), (piece.x, piece.y))
+
+def parse_fen(string: str):
+
+  board = [['' for _ in range(8)] for _ in range(8)]
+  rank, file = 0, 0
+
+  for char in string:
+    if char == ' ': break
+    if char.isdigit():
+      file += int(char)
+    elif char in 'prnbkqPRNBKQ':
+      board[rank][file] = char
+    elif char == '/':
+      file = -1
+      rank += 1
+    file += 1
+  return board
+
+def board_to_fen(board):
+  pass
+
+if __name__ == '__main__':
+
+  board = parse_fen(START)
+
+  for rank in board:
+    for square in rank:
+      print(f"{square} ", end='')
+    print("\n", end='')
+        
+
+    
+    

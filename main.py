@@ -37,20 +37,16 @@ class Chess:
         self.screen = pg.display.set_mode(WINDOW_SIZE)
         pg.display.set_caption(WINDOW_TITLE)
 
-        self.board_obj = b.Board()
-        self.board = self.board_obj.board
-        self.cpu = c.CPU()
-
         self.pvp = pvp
-        self.history = []
-
-    def p_vs_cpu(self):
-        # Set the size of each square on the board
         
+    def p_vs_cpu(self, white_turn=True, castle=[(True, True), (True, True)], passant=None, hmove=0, fmove=0):
+        # Set the size of each square on the board
+        board_obj = b.Board()
+        board = board_obj.board
+        cpu = c.CPU()
+        history = []
         select_piece = None
-        white_turn = True
         possible_moves = None
-        passant = [None, None]
         
         # Game loop
         while True:
@@ -58,27 +54,40 @@ class Chess:
                 for event in pg.event.get():
                     #get mouse info
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
-                    obj = self.board[row][col]
+                    obj = board[row][col]
+
                     if event.type == pg.MOUSEBUTTONDOWN:
                         if obj and obj.symbol in (BLACK_PIECES, WHITE_PIECES)[white_turn]:
                             #SELECTING A PIECE
                             select_piece = obj #change select piece into the obj of choice
-                            possible_moves = select_piece.get_possible(self.board, passant) # get possible moves for piece
+                            possible_moves = select_piece.get_possible(board, passant) # get possible moves for piece
+
                         elif select_piece and (row, col) in possible_moves: 
                             #MAKING A MOVE
-                            move = select_piece.move(self.board, row, col) # move the selected piece and store info
-                            self.history.append(move[0]) #append translated move info to history
-                            passant[white_turn] = move[1] # add passant to list if a pawn had start move
+                            move = select_piece.move(board, row, col) # move the selected piece and store info
+                            history.append(move[0]) #append translated move info to history
+                            board_obj.passant = move[1] # add passant to list if a pawn had start move
                             possible_moves = select_piece = None # set these to None because we're moving onto next turn
+                            
                             white_turn = not white_turn #change the turn 
+                            board_obj.hmove += 1
+
                     self.check_quit(event, sys)
+
             elif not self.pvp and not white_turn:
-                move = self.cpu.computer_move(self.history[-2:] if len(self.history) > 1 else self.history)
-                self.history.append(move) #append the translated move to history 
+                move = cpu.computer_move(history[-2:] if len(history) > 1 else history)
+                history.append(move) #append the translated move to history 
                 move = self.translate_from(move)
-                passant.append(self.board[move[0][0]][move[0][1]].move(self.board, *move[1])[1])
+                board_obj.passant = board[move[0][0]][move[0][1]].move(board, *move[1])[1]
+                
                 white_turn = not white_turn
-            self.board_obj.draw_board(self.screen, select_piece, possible_moves)
+                board_obj.hmove += 1
+                board_obj.fmove += 1
+                
+
+            board_obj.draw_board(self.screen, select_piece, possible_moves)
+            print(board_obj.to_fen())
+
             pg.display.flip()
 
     def translate_from(self, str):

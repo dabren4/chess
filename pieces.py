@@ -1,29 +1,6 @@
 import board as b
 import main as m
 
-#Ahmad's FEN addition
-def create_piece(symbol, position):
-
-    if not symbol.isalpha():
-        return
-    color = 'white' if ord(symbol) < ord('Z') else 'black'
-
-    if symbol.lower() == 'p':
-        return Pawn(color, position)
-    elif symbol.lower() == 'r':
-        return Rook(color, position)
-    elif symbol.lower() == 'b':
-        return Bishop(color, position)
-    elif symbol.lower() == 'n':
-        return Knight(color, position)
-    elif symbol.lower() == 'q':
-        return Queen(color, position)
-    elif symbol.lower() == 'k':
-        return King(color, position)
-    else:
-        return
-
-
 class ChessPiece:
     def __init__(self, color, pos, symbol=''):
         self.color = color
@@ -164,9 +141,11 @@ class Knight(ChessPiece):
 class Pawn(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
-        self.passant = False
         self.symbol = 'P' if color == 'white' else 'p'
     
+    def rep_passant(self):
+        return self.translate_to((0, 0), self.pos + ((-1, 0), (1, 0))[self.color == 'white'])[2:]
+
     def get_possible(self, board, passant):
         possible_moves = set()
         white = self.color == 'white'

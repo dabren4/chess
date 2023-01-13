@@ -47,6 +47,8 @@ class Chess:
         history = []
         select_piece = None
         possible_moves = None
+        drag = None
+        highlight_square = None
         
         # Game loop
         while True:
@@ -62,15 +64,24 @@ class Chess:
                             select_piece = obj #change select piece into the obj of choice
                             possible_moves = select_piece.get_possible(board, passant) # get possible moves for piece
 
-                        elif select_piece and (row, col) in possible_moves: 
-                            #MAKING A MOVE
-                            move = select_piece.move(board, row, col) # move the selected piece and store info
-                            history.append(move[0]) #append translated move info to history
-                            board_obj.passant = move[1] # add passant to list if a pawn had start move
-                            possible_moves = select_piece = None # set these to None because we're moving onto next turn
+                    if select_piece:
+                        if event.type == pg.MOUSEMOTION:
                             
-                            white_turn = not white_turn #change the turn 
-                            board_obj.hmove += 1
+                            drag = (pg.mouse.get_pos()[1] - 35, pg.mouse.get_pos()[0] - 35)
+                            highlight_square = (row, col)
+
+                        elif event.type == pg.MOUSEBUTTONUP:
+                            if select_piece and (row, col) in possible_moves: 
+                                #MAKING A MOVE
+                                move = select_piece.move(board, row, col) # move the selected piece and store info
+                                history.append(move[0]) #append translated move info to history
+                                board_obj.passant = move[1] # add passant to list if a pawn had start move
+                                possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
+                                
+                                white_turn = not white_turn #change the turn 
+                                board_obj.hmove += 1
+                            else:
+                                possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
 
                     self.check_quit(event, sys)
 
@@ -84,9 +95,7 @@ class Chess:
                 board_obj.hmove += 1
                 board_obj.fmove += 1
                 
-
-            board_obj.draw_board(self.screen, select_piece, possible_moves)
-            print(board_obj.to_fen())
+            board_obj.draw_board(self.screen, select_piece, possible_moves, drag, highlight_square)
 
             pg.display.flip()
 

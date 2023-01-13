@@ -1,5 +1,6 @@
 import board as b
 import main as m
+import pygame as pg
 
 class ChessPiece:
     def __init__(self, color, pos, symbol=''):
@@ -48,6 +49,7 @@ class King(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'K' if color == 'white' else 'k'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def get_possible(self, board, passant):
         possible = set()
@@ -67,6 +69,7 @@ class Queen(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'Q' if color == 'white' else 'q'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def get_possible(self, board, passant):
         possible = set()
@@ -86,6 +89,7 @@ class Bishop(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'B' if color == 'white' else 'b'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def get_possible(self, board, passant):
         possible = set()
@@ -105,6 +109,7 @@ class Rook(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'R' if color == 'white' else 'r'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def get_possible(self, board, passant):
         possible = set()
@@ -124,6 +129,7 @@ class Knight(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'N' if color == 'white' else 'n'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def get_possible(self, board, passant):
         possible = set()
@@ -142,6 +148,7 @@ class Pawn(ChessPiece):
     def __init__(self, color, pos):
         super().__init__(color, pos)
         self.symbol = 'P' if color == 'white' else 'p'
+        self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
     def rep_passant(self):
         return self.translate_to((0, 0), self.pos + ((-1, 0), (1, 0))[self.color == 'white'])[2:]
@@ -151,9 +158,10 @@ class Pawn(ChessPiece):
         white = self.color == 'white'
         #first move forward two squares
         if self.pos[0] == (1, 6)[white]: 
-            check = self.pos + ((2,-2)[white], 0)
-            if not board[check[0]][check[1]]: 
-                possible_moves.add(check)
+            check2 = self.pos + ((2,-2)[white], 0)
+            check1 = self.pos + ((1, -1)[white], 0)
+            if not board[check1[0]][check1[1]] and not board[check2[0]][check2[1]]: 
+                possible_moves.add(check2)
         
         #regular pawn move
         check = self.pos + ((1,-1)[white], 0)
@@ -173,8 +181,8 @@ class Pawn(ChessPiece):
         #passant
         if passant:
             l, r = self.pos + (0, -1), self.pos + (0, 1) #checks if passant is next to the pawn
-            if passant[white] and board[l[0]][l[1]] == passant[white]: possible_moves.add(l_dag)
-            if passant[white] and board[r[0]][r[1]] == passant[white]: possible_moves.add(r_dag)
+            if board[l[0]][l[1]] == passant: possible_moves.add(l_dag)
+            if board[r[0]][r[1]] == passant: possible_moves.add(r_dag)
         
         return possible_moves
         

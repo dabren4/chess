@@ -7,7 +7,8 @@ LIGHT_RED = (255, 154, 154)
 LIGHT_GREEN = (183, 255, 183) 
 DARK_GREEN = (135, 212, 135)
 WHITE = (255, 255, 255)
-LIGHT_RED = (255, 136, 136)
+LIGHT_YELLOW = (255,255,102)
+LIGHT_GREY = (175,175,175)
 
 class Vector(tuple):
     def __add__(self, a):
@@ -17,7 +18,7 @@ class Board:
     def __init__(self, fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"):
         self.board, self.white_turn, self.castle, self.passant, self.hmove, self.fmove = self.parse_fen(fen)
 
-    def draw_board(self, screen, select_piece, possible_moves):
+    def draw_board(self, screen, select_piece, possible_moves, drag: tuple, highlight: tuple):
         """
         Parameters:
             screen: Surface pygame object to be drawn
@@ -29,18 +30,28 @@ class Board:
         color = None
         for i in range(8):
             for j in range(8):
+                #squares
                 if select_piece and (i,j) == select_piece.pos:
                     color = DARK_GREEN
-                elif possible_moves and (i,j) in possible_moves:
-                    color = LIGHT_RED
+                elif drag and (i,j) == highlight: 
+                    color = LIGHT_YELLOW
                 elif (i + j) % 2 == 0:
                     color = LIGHT_GREEN
                 else: 
                     color = WHITE
                 pg.draw.rect(screen, color, (j * m.SQUARE_SIZE, i * m.SQUARE_SIZE, m.SQUARE_SIZE, m.SQUARE_SIZE))
+
+                #draw piece
                 piece = self.board[i][j]
-                if piece is not None:
-                    screen.blit(pg.transform.scale(pg.image.load(m.PIECE_IMAGES[piece.symbol]), (70, 70)), (piece.x, piece.y))
+                if piece and piece != select_piece: screen.blit(piece.image, (piece.x, piece.y))
+                if select_piece and piece == select_piece and not drag: screen.blit(piece.image, (piece.x, piece.y))
+                #possible move dots
+                if possible_moves and (i, j) in possible_moves:
+                    pg.draw.circle(screen, LIGHT_GREY, (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
+                
+                #draw the drag object
+                if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
+                
 
     def parse_fen(self, fen: str) -> list[list[int]]:
         board = [['' for _ in range(8)] for _ in range(8)]
@@ -110,7 +121,7 @@ class Board:
         if self.passant: 
             out += self.passant.rep_passant() + ' '
         else: out += '- '
-        
+
         #hmove and full move
         out += str(self.hmove) + ' ' + str(self.fmove) + ' '
         return out

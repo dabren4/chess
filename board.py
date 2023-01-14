@@ -10,6 +10,16 @@ WHITE = (255, 255, 255)
 LIGHT_YELLOW = (255,255,102)
 LIGHT_GREY = (175,175,175)
 
+#Board Colors
+
+DARK_PURPLE = (112,102,119)
+LIGHT_PURPLE = (204,183,174)
+
+DARK_BROWN = (184,139,74)
+LIGHT_BROWN = (227,193,111)
+
+
+
 class Vector(tuple):
     def __add__(self, a):
         return Vector(x + y for x, y in zip(self, a))
@@ -27,19 +37,21 @@ class Board:
         Purpose:
             Draws the board
         """
-        color = None
+        square_color = None
         for i in range(8):
             for j in range(8):
                 #squares
                 if select_piece and (i,j) == select_piece.pos:
-                    color = DARK_GREEN
+                    square_color = DARK_GREEN
                 elif drag and (i,j) == highlight: 
-                    color = LIGHT_YELLOW
+                    square_color = LIGHT_YELLOW
                 elif (i + j) % 2 == 0:
-                    color = LIGHT_GREEN
+
+                    square_color = m.color_light
+                
                 else: 
-                    color = WHITE
-                pg.draw.rect(screen, color, (j * m.SQUARE_SIZE, i * m.SQUARE_SIZE, m.SQUARE_SIZE, m.SQUARE_SIZE))
+                    square_color = m.color_dark
+                pg.draw.rect(screen, square_color, (j * m.SQUARE_SIZE, i * m.SQUARE_SIZE, m.SQUARE_SIZE, m.SQUARE_SIZE))
 
                 #draw piece
                 piece = self.board[i][j]

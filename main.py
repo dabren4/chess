@@ -23,6 +23,11 @@ PIECE_IMAGES = {
 BLACK_PIECES = {'p', 'n', 'r', 'q', 'k', 'b'}
 WHITE_PIECES = {'P', 'N', 'B', 'R', 'Q', 'K'}
 
+#Text Menu
+
+options = ["Player vs Player", "Player vs CPU", "Board Color", "Exit"]
+
+
 class Chess:
     def __init__(self, pvp):
         """
@@ -125,5 +130,72 @@ class Chess:
                 pg.quit()
                 sys.exit()
 
+#Previous Run Function
+#if __name__ == "__main__": 
+#    Chess(False).p_vs_cpu()
+
+
+DARK_PURPLE = (112,102,119)
+LIGHT_PURPLE = (204,183,174)
+
+DARK_BROWN = (184,139,74)
+LIGHT_BROWN = (227,193,111)
+
+WHITE = (255, 255, 255)
+LIGHT_GREEN = (183, 255, 183)
+
+color_dark = LIGHT_GREEN
+color_light = WHITE
+
+#Game Menu
 if __name__ == "__main__": 
-    Chess(False).p_vs_cpu()
+    while True:
+        print("Please select an option:")
+        for i, option in enumerate(options):
+            print(f"{i + 1}. {option}")
+
+        choice = input()
+        if choice.isnumeric() and int(choice) in range(1, len(options) + 1):
+            if options[int(choice) - 1] == "Player vs Player":
+                Chess(True).p_vs_cpu()
+            elif options[int(choice) - 1] == "Player vs CPU":
+                Chess(False).p_vs_cpu()
+
+            elif options[int(choice) - 1] == "Board Color":
+                
+                
+
+
+                options_color = ["Purple", "Brown", "Default"]
+
+                print("Which color would you like?: ")
+                for i, option_color in enumerate(options_color):
+                    print(f"{i + 1}. {option_color}")
+                choice_color = input()
+                if choice_color.isnumeric() and int(choice_color) in range(1, len(option_color) + 1):
+                    if options_color[int(choice_color) - 1] == "Purple":
+                        color_dark = DARK_PURPLE 
+                        color_light = LIGHT_PURPLE
+                        print("The board is now set to Purple!")
+                        
+                    elif options_color[int(choice_color) - 1] == "Brown":
+                        color_dark = DARK_BROWN
+                        color_light = LIGHT_BROWN
+                        print("The board is now set to Brown!")
+                        
+                    elif options_color[int(choice_color) - 1] == "Default":
+                        color_dark = b.LIGHT_GREEN
+                        color_light = b.WHITE
+                        print("The board has been reverted to the default colors!")
+                        
+                    
+                    else:
+                        print("Invalid")
+                        
+                    
+
+            elif options[int(choice) - 1] == "Exit":
+                print("Exiting! Thanks for playing.")
+                sys.exit()
+        else:
+            print("Invalid choice. Please enter a number between 1 and", len(options))

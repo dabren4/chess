@@ -1,6 +1,7 @@
 import pygame as pg
 import sys
 import board as b
+import pieces as p
 import cpu as c
 
 SQUARE_SIZE = 80
@@ -23,85 +24,119 @@ PIECE_IMAGES = {
 BLACK_PIECES = {'p', 'n', 'r', 'q', 'k', 'b'}
 WHITE_PIECES = {'P', 'N', 'B', 'R', 'Q', 'K'}
 
-#Text Menu
+DARK_PURPLE = (112,102,119)
+LIGHT_PURPLE = (204,183,174)
 
-options = ["Player vs Player", "Player vs CPU", "Board Color", "Exit"]
+DARK_BROWN = (184,139,74)
+LIGHT_BROWN = (227,193,111)
+
+WHITE = (255, 255, 255)
+LIGHT_GREEN = (183, 255, 183)
+
+GAME_OPTIONS = {color: ix+1 for ix, color in enumerate(["Player vs. Player", "Player vs. CPU", "Board Color", "Specify FEN", "Exit"])}
 
 
 class Chess:
-    def __init__(self, pvp):
-        """
-        ##################
-        IMPORTANT!!!!
-        ##################
-        We could have stuff like difficulty, mode and other options that we can feed into this constructor
-        That way we can initialize different Chess games based on user input
-        """
+    def __init__(self):
         # Initialize Pygame
         pg.init()
         self.screen = pg.display.set_mode(WINDOW_SIZE)
         pg.display.set_caption(WINDOW_TITLE)
+        #default values
+        self.pvp = True
+        self.color_dark = LIGHT_GREEN
+        self.color_light = WHITE
+        self.fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-        self.pvp = pvp
+        while True:
+            for k ,v in GAME_OPTIONS.items():
+                print(f"{v}. {k}")
+            choice = int(input("Enter your choice: "))
+            if GAME_OPTIONS["Player vs. Player"] == choice:
+                self.pvp = True
+                break
+            elif GAME_OPTIONS["Player vs. CPU"] == choice:
+                self.pvp = False
+                break
+            elif GAME_OPTIONS["Board Color"] == choice:
+                options_color = {color: ix+1 for ix, color in enumerate(["Purple", "Brown", "Default"])}
+                print("Which color would you like?: ")
+                for i, option_color in enumerate(options_color):
+                    print(f"{i + 1}. {option_color}")
+                choice_color = int(input("Enter your color choice: "))
+                if options_color["Purple"] == choice_color:
+                    self.color_dark = DARK_PURPLE 
+                    self.color_light = LIGHT_PURPLE
+                    print("The board is now set to Purple!")
+                elif options_color["Brown"] == choice_color:
+                    self.color_dark = DARK_BROWN
+                    self.color_light = LIGHT_BROWN
+                    print("The board is now set to Brown!")
+                elif options_color["Default"] == choice_color:
+                    self.color_dark = LIGHT_GREEN
+                    self.color_light = WHITE
+                    print("The board has been reverted to the default colors!")
+                else:
+                    print("Invalid")
+            elif GAME_OPTIONS["Specify FEN"] == choice:
+                self.fen = input("Enter FEN string: ")
+            elif GAME_OPTIONS["Exit"] == choice:
+                print("Exiting! Thanks for playing.")
+                sys.exit()
         
-    def p_vs_cpu(self, white_turn=True, castle=[(True, True), (True, True)], passant=None, hmove=0, fmove=0):
+        self.p_vs_cpu()
+            
+    def p_vs_cpu(self):
         # Set the size of each square on the board
-        board_obj = b.Board()
-        board = board_obj.board
+        board = b.Board(self.color_dark, self.color_light, self.fen)
+        board_grid = board.board
         cpu = c.CPU()
         history = []
-        select_piece = None
-        possible_moves = None
-        drag = None
-        highlight_square = None
-        
+        white_turn = True
+        select_piece = possible_moves = drag = highlight_square =  None
+
         # Game loop
         while True:
             if self.pvp or white_turn:
                 for event in pg.event.get():
                     #get mouse info
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
-                    obj = board[row][col]
-
+                    
                     if event.type == pg.MOUSEBUTTONDOWN:
+                        obj = board_grid[row][col]
                         if obj and obj.symbol in (BLACK_PIECES, WHITE_PIECES)[white_turn]:
                             #SELECTING A PIECE
                             select_piece = obj #change select piece into the obj of choice
-                            possible_moves = select_piece.get_possible(board, passant) # get possible moves for piece
+                            possible_moves = select_piece.get_possible(board) # get possible moves for piece
 
                     if select_piece:
                         if event.type == pg.MOUSEMOTION:
-                            
                             drag = (pg.mouse.get_pos()[1] - 35, pg.mouse.get_pos()[0] - 35)
                             highlight_square = (row, col)
 
                         elif event.type == pg.MOUSEBUTTONUP:
                             if select_piece and (row, col) in possible_moves: 
                                 #MAKING A MOVE
-                                move = select_piece.move(board, row, col) # move the selected piece and store info
-                                history.append(move[0]) #append translated move info to history
-                                board_obj.passant = move[1] # add passant to list if a pawn had start move
-                                possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
-                                
+                                prev_pos = select_piece.pos
+                                board.move(select_piece, row, col) # move the selected piece and store info
+                                history.append(select_piece.translate_to(prev_pos, (row, col))) #append translated move info to history
+
                                 white_turn = not white_turn #change the turn 
-                                board_obj.hmove += 1
-                            else:
-                                possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
-
+                                board.hmove += 1
+                            possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
+                            
                     self.check_quit(event, sys)
-
             elif not self.pvp and not white_turn:
                 move = cpu.computer_move(history[-2:] if len(history) > 1 else history)
                 history.append(move) #append the translated move to history 
                 move = self.translate_from(move)
-                board_obj.passant = board[move[0][0]][move[0][1]].move(board, *move[1])[1]
-                
+                board.move(board_grid[move[0][0]][move[0][1]], move[1][0], move[1][1])
                 white_turn = not white_turn
-                board_obj.hmove += 1
-                board_obj.fmove += 1
+                board.hmove += 1
+                board.fmove += 1
                 
-            board_obj.draw_board(self.screen, select_piece, possible_moves, drag, highlight_square)
-
+            board.draw_board(self.screen, select_piece, possible_moves, drag, highlight_square)
+            
             pg.display.flip()
 
     def translate_from(self, str):
@@ -130,72 +165,7 @@ class Chess:
                 pg.quit()
                 sys.exit()
 
-#Previous Run Function
-#if __name__ == "__main__": 
-#    Chess(False).p_vs_cpu()
-
-
-DARK_PURPLE = (112,102,119)
-LIGHT_PURPLE = (204,183,174)
-
-DARK_BROWN = (184,139,74)
-LIGHT_BROWN = (227,193,111)
-
-WHITE = (255, 255, 255)
-LIGHT_GREEN = (183, 255, 183)
-
-color_dark = LIGHT_GREEN
-color_light = WHITE
 
 #Game Menu
 if __name__ == "__main__": 
-    while True:
-        print("Please select an option:")
-        for i, option in enumerate(options):
-            print(f"{i + 1}. {option}")
-
-        choice = input()
-        if choice.isnumeric() and int(choice) in range(1, len(options) + 1):
-            if options[int(choice) - 1] == "Player vs Player":
-                Chess(True).p_vs_cpu()
-            elif options[int(choice) - 1] == "Player vs CPU":
-                Chess(False).p_vs_cpu()
-
-            elif options[int(choice) - 1] == "Board Color":
-                
-                
-
-
-                options_color = ["Purple", "Brown", "Default"]
-
-                print("Which color would you like?: ")
-                for i, option_color in enumerate(options_color):
-                    print(f"{i + 1}. {option_color}")
-                choice_color = input()
-                if choice_color.isnumeric() and int(choice_color) in range(1, len(option_color) + 1):
-                    if options_color[int(choice_color) - 1] == "Purple":
-                        color_dark = DARK_PURPLE 
-                        color_light = LIGHT_PURPLE
-                        print("The board is now set to Purple!")
-                        
-                    elif options_color[int(choice_color) - 1] == "Brown":
-                        color_dark = DARK_BROWN
-                        color_light = LIGHT_BROWN
-                        print("The board is now set to Brown!")
-                        
-                    elif options_color[int(choice_color) - 1] == "Default":
-                        color_dark = b.LIGHT_GREEN
-                        color_light = b.WHITE
-                        print("The board has been reverted to the default colors!")
-                        
-                    
-                    else:
-                        print("Invalid")
-                        
-                    
-
-            elif options[int(choice) - 1] == "Exit":
-                print("Exiting! Thanks for playing.")
-                sys.exit()
-        else:
-            print("Invalid choice. Please enter a number between 1 and", len(options))
+    Chess()

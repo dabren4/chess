@@ -12,21 +12,16 @@ LIGHT_GREY = (175,175,175)
 
 #Board Colors
 
-DARK_PURPLE = (112,102,119)
-LIGHT_PURPLE = (204,183,174)
-
-DARK_BROWN = (184,139,74)
-LIGHT_BROWN = (227,193,111)
-
-
 
 class Vector(tuple):
     def __add__(self, a):
         return Vector(x + y for x, y in zip(self, a))
 
 class Board:
-    def __init__(self, fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"):
-        self.board, self.white_turn, self.castle, self.passant, self.hmove, self.fmove = self.parse_fen(fen)
+    def __init__(self, dark_color, light_color, fen="r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"):
+        self.dark_color = dark_color
+        self.light_color = light_color
+        self.parse_fen(fen)
 
     def draw_board(self, screen, select_piece, possible_moves, drag: tuple, highlight: tuple):
         """
@@ -46,59 +41,100 @@ class Board:
                 elif drag and (i,j) == highlight: 
                     square_color = LIGHT_YELLOW
                 elif (i + j) % 2 == 0:
-
-                    square_color = m.color_light
-                
+                    square_color = self.light_color
                 else: 
-                    square_color = m.color_dark
+                    square_color = self.dark_color
                 pg.draw.rect(screen, square_color, (j * m.SQUARE_SIZE, i * m.SQUARE_SIZE, m.SQUARE_SIZE, m.SQUARE_SIZE))
 
                 #draw piece
                 piece = self.board[i][j]
                 if piece and piece != select_piece: screen.blit(piece.image, (piece.x, piece.y))
                 if select_piece and piece == select_piece and not drag: screen.blit(piece.image, (piece.x, piece.y))
+
                 #possible move dots
                 if possible_moves and (i, j) in possible_moves:
                     pg.draw.circle(screen, LIGHT_GREY, (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
                 
-                #draw the drag object
+                #draw the dragged object if there is one
                 if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
-                
 
+    def move(self, select_piece, row, col):
+        """
+        Parameters:
+            select_piece: piece object that is the selected (previous) piece that will be moved
+            row: row to be moved to
+            col: column to be moved to
+        Purpose:
+            Moves select_piece object to (row, col) in the board representation
+            Try to see if the move piece creates a check
+        """
+        # has to be in this order otherwise indexing gets messed up
+        s_pos = select_piece.pos
+        temp = self.board[s_pos[0]].pop(s_pos[1]) 
+        self.board[s_pos[0]].insert(s_pos[1], None)
+        self.board[row][col] = temp
+
+        #passant
+        if type(self) is p.Pawn and abs(s_pos[0] - row) == 2: 
+            self.passant = self #this sets up the passant move 
+        else:
+            self.passant = None 
+
+        #castling
+        if type(select_piece) is p.King:
+            ix = "KQkq".find(select_piece.symbol)
+            #try to move the rook
+            if abs(s_pos[1] - col) > 1: self.move(self.board[row][(0,7)[col > 3]], row, col + (1,-1)[col > 3]) 
+            #eliminate castling rights
+            self.castle[ix+1] = False 
+            self.castle[ix] = False
+        elif type(select_piece) is p.Rook:
+            #gets rid of castling rights for respective color side
+            ix = (0, 2)[select_piece.symbol in m.BLACK_PIECES] + (0, 1)[s_pos[1] == 0]
+            self.castle[ix] = False
+        
+        #Check if we need to change for the king/rook (castling purposes)
+        try:
+            if not self.moved: self.moved = True
+        except:
+            pass
+        
+        #Update piece
+        select_piece.update_pos(Vector((row,col)))
+                
     def parse_fen(self, fen: str) -> list[list[int]]:
-        board = [['' for _ in range(8)] for _ in range(8)]
+        self.board = [['' for _ in range(8)] for _ in range(8)]
         rank, file, segments = 0, 0, fen.split(' ')
         for segment in range(len(segments)):
             s = segments[segment]
             if segment == 0: # This is the board positioning
                 for char in s:
+                    print("file is", file, "with value", char)
                     if char == ' ': break
                     if char.isdigit():
                         for f in range(int(char)):
-                            board[rank][file + f] = None
+                            self.board[rank][file + f] = None
                         file += int(char)
                     elif char in 'prnbkqPRNBKQ':
-                        board[rank][file] = self.create_piece(char, Vector((rank, file)))
+                        self.board[rank][file] = self.create_piece(char, Vector((rank, file)))
+                        file += 1
                     elif char == '/':
-                        file = -1
+                        file = 0
                         rank += 1
-                    file += 1
             elif segment == 1: #To move
-                white_turn = s[0] == 'w'
+                self.white_turn = s[0] == 'w'
             elif segment == 2: #castling
-                castle = [('K' in s, 'Q' in s), ('k' in s, 'q' in s)]
+                self.castle = ['K' in s, 'Q' in s, 'k' in s, 'q' in s]
             elif segment == 3: #en passant square
                 if s != '-':
-                    square = Vector(m.Chess.translate_from('a1'+s)[1]) + ((-1, 0), (1,0))[white_turn]
-                    passant = board[square[0]][square[1]]
+                    square = Vector(m.Chess.translate_from('a1'+s)[1]) + ((-1, 0), (1,0))[self.white_turn]
+                    self.passant = self.board[square[0]][square[1]]
                 else:
-                    passant = None
+                    self.passant = None
             elif segment == 4: #halfmove counter
-                hmove =  int(s)
+                self.hmove =  int(s)
             elif segment == 5: #fullmove counter
-                fmove = int(s)
-        return (board, white_turn, castle, passant, hmove, fmove)
-
+                self.fmove = int(s)
 
     def to_fen(self):
         out = ''
@@ -123,11 +159,14 @@ class Board:
         out += 'w ' if self.white_turn else 'b '
 
         #castle
-        s = list('KQkq')
-        for i in reversed(range(2)):
-            for j in reversed(range(2)):
-                if not self.castle[i][j]: s.pop(i+j)
-        out += ''.join(s) + ' ' if s else '-' + ' '
+        castle_rep = 'KQkq'
+        no_castle = True
+        for ix in range(len(castle_rep)):
+            if self.castle[ix]: 
+                out += castle_rep[ix]
+                no_castle = False
+        if no_castle: out += '-'
+        out += ' '
         
         #passant
         if self.passant: 
@@ -158,9 +197,6 @@ class Board:
         else:
             return
 
-if __name__ == '__main__':
-    print(Board())
-        
 
     
     

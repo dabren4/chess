@@ -1,27 +1,24 @@
-from traitlets import Int
 import pieces as p
 import main as m
 import pygame as pg
 
-LIGHT_RED = (255, 154, 154)
-LIGHT_GREEN = (183, 255, 183) 
 DARK_GREEN = (135, 212, 135)
-WHITE = (255, 255, 255)
 LIGHT_YELLOW = (255,255,102)
 LIGHT_GREY = (175,175,175)
-
-#Board Colors
-
 
 class Vector(tuple):
     def __add__(self, a):
         return Vector(x + y for x, y in zip(self, a))
 
 class Board:
-    def __init__(self, dark_color, light_color, fen="r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"):
+    def __init__(self, dark_color, light_color, fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"):
+        self.white_turn = True
         self.dark_color = dark_color
         self.light_color = light_color
-        self.parse_fen(fen)
+
+        self.parse_fen(fen) #sets variables 
+        self.check_all() # This method creates all instances of possible attacking squares and pinned pieces
+        print(self.white_turn, "after")
 
     def draw_board(self, screen, select_piece, possible_moves, drag: tuple, highlight: tuple):
         """
@@ -55,8 +52,13 @@ class Board:
                 if possible_moves and (i, j) in possible_moves:
                     pg.draw.circle(screen, LIGHT_GREY, (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
                 
+                if (i, j) in self.can_attack:
+                    pg.draw.circle(screen, (255, 0, 0), (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
+                
                 #draw the dragged object if there is one
                 if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
+
+
 
     def move(self, select_piece, row, col):
         """
@@ -81,6 +83,7 @@ class Board:
             self.passant = None 
 
         #castling
+        #TO DO: Initialize castling rights based on rook + king availability
         if type(select_piece) is p.King:
             ix = "KQkq".find(select_piece.symbol)
             #try to move the rook
@@ -101,7 +104,23 @@ class Board:
         
         #Update piece
         select_piece.update_pos(Vector((row,col)))
-                
+
+    def check_all(self):
+        """
+        This function checks the board for all possible moves for a specified color AFTER each move 
+        RETURNS SET OF (ROW, COL) THAT SQUARES THAT CURRENT PLAYER CAN ATTACK AND SET OF PINNED PIECES 
+        """
+        self.can_attack = set()
+        self.pinned = set()
+        for row in range(len(self.board)):
+            for col in range(len(self.board[0])):
+                obj = self.board[row][col]
+                if obj and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[not self.white_turn]: #want to find opposite of whose turn it is (want to find possible attack from opponent (logical))
+                    for square in obj.get_possible(self, True): #need to add True because of fact that Pawn cannot attack square in front of it, even though it can move there 
+                        self.can_attack.add(square)
+                    if type(obj) is p.Rook or type(obj) is p.Queen or type(obj) is p.Bishop:
+                        obj.search_pin(self) #will add to pin category automatically (return void)
+
     def parse_fen(self, fen: str) -> list[list[int]]:
         self.board = [['' for _ in range(8)] for _ in range(8)]
         rank, file, segments = 0, 0, fen.split(' ')
@@ -109,7 +128,6 @@ class Board:
             s = segments[segment]
             if segment == 0: # This is the board positioning
                 for char in s:
-                    print("file is", file, "with value", char)
                     if char == ' ': break
                     if char.isdigit():
                         for f in range(int(char)):

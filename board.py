@@ -58,6 +58,8 @@ class Board:
                 #draw the dragged object if there is one
                 if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
 
+
+    #the ix variable is now calculated with a ternary expression instead of the long if-else block
     def move(self, select_piece, row, col):
         """
         Parameters:
@@ -70,9 +72,11 @@ class Board:
         """
         # has to be in this order otherwise indexing gets messed up
         s_pos = select_piece.pos
-        temp = self.board[s_pos[0]].pop(s_pos[1]) 
-        self.board[s_pos[0]].insert(s_pos[1], None)
-        self.board[row][col] = temp
+
+        #used instead of the pop and insert method previously used
+        self.board[s_pos[0]][s_pos[1]] = None 
+        self.board[row][col] = select_piece
+        select_piece.pos = (row, col)
 
         #passant
         if type(self) is p.Pawn and abs(s_pos[0] - row) == 2: 
@@ -81,12 +85,15 @@ class Board:
             self.passant = None 
 
         #castling
-        if type(select_piece) is p.King:
+        if isinstance(select_piece, p.King): #used to check the type of the select_piece variable instead of type(select_piece) is p.King
             ix = "KQkq".find(select_piece.symbol)
-            #try to move the rook
-            if abs(s_pos[1] - col) > 1: self.move(self.board[row][(0,7)[col > 3]], row, col + (1,-1)[col > 3]) 
-            #eliminate castling rights
-            self.castle[ix+1] = False 
+            # try to move the rook
+            if abs(s_pos[1] - col) > 1:
+                rook_col = (0, 7)[col > 3]
+                rook = self.board[row][rook_col]
+                self.move(rook, row, col + (1, -1)[col > 3]) 
+            # eliminate castling rights
+            self.castle[ix + 1] = False 
             self.castle[ix] = False
         elif type(select_piece) is p.Rook:
             #gets rid of castling rights for respective color side
@@ -94,11 +101,8 @@ class Board:
             self.castle[ix] = False
         
         #Check if we need to change for the king/rook (castling purposes)
-        try:
-            if not self.moved: self.moved = True
-        except:
-            pass
-        
+        select_piece.moved = True #set to true regardless of the try-except block.
+
         #Update piece
         select_piece.update_pos(Vector((row,col)))
                 

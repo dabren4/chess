@@ -33,7 +33,7 @@ class King(ChessPiece):
         self.moved = False
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board):
+    def get_possible(self, board, can_attack=False):
         possible = set()
         deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
         while deltas:
@@ -46,6 +46,7 @@ class King(ChessPiece):
                     check += cur
 
         #castling rights
+        #TO DO MAKE SURE LINE OF SIGHT IS CLEAR OFCAN ATTACK
         if not self.moved:
             ix = (0,2)[self.symbol in m.BLACK_PIECES]
             deltas = [(0,1), (0,-1)]
@@ -67,8 +68,9 @@ class Queen(ChessPiece):
         self.symbol = 'Q' if color == 'white' else 'q'
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board):
+    def get_possible(self, board, can_attack=False):
         possible = set()
+        if self in board.pinned: return possible
         deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
         while deltas:
             cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
@@ -80,6 +82,33 @@ class Queen(ChessPiece):
                 check += cur
                 if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
         return possible
+    
+    def search_pin(self, board):
+        deltas = [(1,-1), (1, 1), (-1, 1), (-1, -1), (0,-1), (0, 1), (-1, 0), (1, 0)]
+        while deltas:
+            poss = None
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                check += cur # check the next square
+                if check_obj and type(check_obj) != King and check_obj.color != self.color: 
+                    poss = check_obj
+                    break # break after add because we can overtake black
+                elif check_obj:
+                    break
+                
+            if poss:
+                print(poss)
+                while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                    check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                    print("check", check_obj)
+                    if check_obj:
+                        if type(check_obj) == King and check_obj.color != self.color: #seeing if we're attacking the opposing king
+                            board.pinned.add(poss)
+                        break #go to the next delta if this is the case
+                    check += cur # check the next square
+
 
 class Bishop(ChessPiece):
     def __init__(self, color, pos):
@@ -87,8 +116,8 @@ class Bishop(ChessPiece):
         self.symbol = 'B' if color == 'white' else 'b'
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board):
-        possible = set()
+    def get_possible(self, board, can_attack=False):
+        if self in board.pinned: return possible
         deltas = [(1,-1), (1, 1), (-1, -1), (-1, 1)]
         while deltas:
             cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
@@ -100,6 +129,29 @@ class Bishop(ChessPiece):
                 check += cur
                 if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
         return possible
+    
+    def search_pin(self, board):
+        deltas = [(1,-1), (1, 1), (-1, 1), (-1, -1)]
+        while deltas:
+            poss = None
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if check_obj and type(check_obj) != King and check_obj.color != self.color: 
+                    poss = check_obj
+                    break # break after add because we can overtake black
+                elif check_obj:
+                    break
+                check += cur # check the next square
+            if poss:
+                while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                    check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                    if check_obj:
+                        if type(check_obj) == King and check_obj.color != self.color: #seeing if we're attacking the opposing king
+                            board.pinned.add(poss)
+                        break #go to the next delta if this is the case
+                    check += cur # check the next square
 
 class Rook(ChessPiece):
     def __init__(self, color, pos):
@@ -108,19 +160,46 @@ class Rook(ChessPiece):
         self.moved = False
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board):
+    def get_possible(self, board, can_attack=False):
         possible = set()
+        if self in board.pinned: return possible
         deltas = [(0,-1), (0, 1), (-1, 0), (1, 0)]
         while deltas:
             cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
             check = cur
             while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if check_obj and check_obj.color == self.color: break
+                if check_obj and check_obj.color == self.color: 
+                    break
                 possible.add(self.pos + check)
                 check += cur
-                if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
+                if check_obj and check_obj.color != self.color: 
+                    break # break after add because we can overtake black
         return possible
+
+    def search_pin(self, board):
+        deltas = [(0,-1), (0, 1), (-1, 0), (1, 0)]
+        while deltas:
+            poss = None
+            cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
+            check = cur
+            while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                if check_obj and type(check_obj) != King and check_obj.color != self.color: 
+                    poss = check_obj
+                    break # break after add because we can overtake black
+                elif check_obj:
+                    break
+                check += cur # check the next square
+            if poss:
+                while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
+                    check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
+                    if check_obj:
+                        if type(check_obj) == King and check_obj.color != self.color: #seeing if we're attacking the opposing king
+                            board.pinned.add(poss)
+                        break #go to the next delta if this is the case
+                    check += cur # check the next square
+
 
 class Knight(ChessPiece):
     def __init__(self, color, pos):
@@ -130,6 +209,7 @@ class Knight(ChessPiece):
     
     def get_possible(self, board):
         possible = set()
+        if self in board.pinned: return 
         deltas = [(-1,-2), (-2,-1), (-2, 1), (-1, 2), (1, 2), (2, -1), (2, 1), (1, -2)]
         while deltas:
             cur = b.Vector(deltas.pop(0)) # have to cast to vector so addition works element-wise
@@ -139,7 +219,6 @@ class Knight(ChessPiece):
                 if not check_obj or check_obj.color != self.color: 
                     possible.add(self.pos + check)
                     check += cur
-        return possible
 
 class Pawn(ChessPiece):
     def __init__(self, color, pos):
@@ -150,38 +229,39 @@ class Pawn(ChessPiece):
     def rep_passant(self):
         return self.translate_to((0, 0), self.pos + ((-1, 0), (1, 0))[self.color == 'white'])[2:]
 
-    def get_possible(self, board):
-        possible_moves = set()
+    def get_possible(self, board, can_attack=False):
+        possible = set()
+        if self in board.pinned: return possible
         white = self.color == 'white'
         #first move forward two squares
         if self.pos[0] == (1, 6)[white]: 
             check2 = self.pos + ((2,-2)[white], 0)
             check1 = self.pos + ((1, -1)[white], 0)
-            if not board.board[check1[0]][check1[1]] and not board.board[check2[0]][check2[1]]: 
-                possible_moves.add(check2)
+            if not board.board[check1[0]][check1[1]] and not board.board[check2[0]][check2[1]] and not can_attack: 
+                possible.add(check2)
         
         #regular pawn move
         check = self.pos + ((1,-1)[white], 0)
-        if not board.board[check[0]][check[1]]: 
-            possible_moves.add(check)
+        if not board.board[check[0]][check[1]] and not can_attack:  #we don't want to add this square when looking for squares that the pawn can attack
+            possible.add(check)
             self.passant = False
 
         #overtake 
         l_dag, r_dag = self.pos + ((1,-1)[white], -1), self.pos + ((1,-1)[white], 1)
         if 0 <= l_dag[1] < 8:
             piece = board.board[l_dag[0]][l_dag[1]]
-            if piece and self.color != piece.color: possible_moves.add(l_dag)
+            if piece and self.color != piece.color: possible.add(l_dag)
         if 0 <= r_dag[1] < 8:
             piece = board.board[r_dag[0]][r_dag[1]]
-            if piece and self.color != piece.color: possible_moves.add(r_dag)
+            if piece and self.color != piece.color: possible.add(r_dag)
 
         #passant
         if board.passant:
             l, r = self.pos + (0, -1), self.pos + (0, 1) #checks if passant is next to the pawn
             if 0 <= l[1] < 8 and board.board[l[0]][l[1]] == board.passant: 
-                possible_moves.add(l_dag)
+                possible.add(l_dag)
             if 0 <= l[1] < 8 and board.board[r[0]][r[1]] == board.passant: 
-                possible_moves.add(r_dag)
+                possible.add(r_dag)
         
-        return possible_moves
+        return possible
         

@@ -35,18 +35,13 @@ LIGHT_GREEN = (183, 255, 183)
 
 GAME_OPTIONS = {color: ix+1 for ix, color in enumerate(["Player vs. Player", "Player vs. CPU", "Board Color", "Specify FEN", "Exit"])}
 
-
 class Chess:
     def __init__(self):
-        # Initialize Pygame
-        pg.init()
-        self.screen = pg.display.set_mode(WINDOW_SIZE)
-        pg.display.set_caption(WINDOW_TITLE)
         #default values
         self.pvp = True
         self.color_dark = LIGHT_GREEN
         self.color_light = WHITE
-        self.fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        self.fen="r3k2r/4r3/8/8/8/8/8/R3Q2R w KQkq - 0 1"
 
         while True:
             for k ,v in GAME_OPTIONS.items():
@@ -83,59 +78,66 @@ class Chess:
             elif GAME_OPTIONS["Exit"] == choice:
                 print("Exiting! Thanks for playing.")
                 sys.exit()
-        
+
+        # Initialize Pygame
+        pg.init()
+        self.screen = pg.display.set_mode(WINDOW_SIZE)
+        pg.display.set_caption(WINDOW_TITLE)
         self.p_vs_cpu()
             
     def p_vs_cpu(self):
         # Set the size of each square on the board
         board = b.Board(self.color_dark, self.color_light, self.fen)
-        board_grid = board.board
         cpu = c.CPU()
         history = []
-        white_turn = True
-        select_piece = possible_moves = drag = highlight_square =  None
+        select_piece = possible_moves = drag_pos = highlight_square =  None
 
         # Game loop
         while True:
-            if self.pvp or white_turn:
+            if self.pvp or board.white_turn:
                 for event in pg.event.get():
                     #get mouse info
                     row, col = pg.mouse.get_pos()[1] // SQUARE_SIZE, pg.mouse.get_pos()[0] // SQUARE_SIZE
                     
                     if event.type == pg.MOUSEBUTTONDOWN:
-                        obj = board_grid[row][col]
-                        if obj and obj.symbol in (BLACK_PIECES, WHITE_PIECES)[white_turn]:
+                        obj = board.board[row][col]
+                        if obj and obj.symbol in (BLACK_PIECES, WHITE_PIECES)[board.white_turn]:
                             #SELECTING A PIECE
                             select_piece = obj #change select piece into the obj of choice
                             possible_moves = select_piece.get_possible(board) # get possible moves for piece
 
                     if select_piece:
                         if event.type == pg.MOUSEMOTION:
-                            drag = (pg.mouse.get_pos()[1] - 35, pg.mouse.get_pos()[0] - 35)
+                            drag_pos = (pg.mouse.get_pos()[1] - 35, pg.mouse.get_pos()[0] - 35)
                             highlight_square = (row, col)
 
                         elif event.type == pg.MOUSEBUTTONUP:
+                            print("possible", possible_moves)
                             if select_piece and (row, col) in possible_moves: 
                                 #MAKING A MOVE
                                 prev_pos = select_piece.pos
                                 board.move(select_piece, row, col) # move the selected piece and store info
                                 history.append(select_piece.translate_to(prev_pos, (row, col))) #append translated move info to history
+                                board.white_turn = not board.white_turn #change the turn 
+                                board.check_all()
 
-                                white_turn = not white_turn #change the turn 
+                                print(board.can_attack)
+                                print(board.pinned)
+                                
                                 board.hmove += 1
-                            possible_moves = select_piece = highlight_square = drag = None # set these to None because we're moving onto next turn
+                            possible_moves = select_piece = highlight_square = drag_pos = None # set these to None because we're moving onto next turn
                             
                     self.check_quit(event, sys)
             elif not self.pvp and not white_turn:
                 move = cpu.computer_move(history[-2:] if len(history) > 1 else history)
                 history.append(move) #append the translated move to history 
                 move = self.translate_from(move)
-                board.move(board_grid[move[0][0]][move[0][1]], move[1][0], move[1][1])
+                board.move(board.board[move[0][0]][move[0][1]], move[1][0], move[1][1])
                 white_turn = not white_turn
                 board.hmove += 1
                 board.fmove += 1
                 
-            board.draw_board(self.screen, select_piece, possible_moves, drag, highlight_square)
+            board.draw_board(self.screen, select_piece, possible_moves, drag_pos, highlight_square)
             
             pg.display.flip()
 

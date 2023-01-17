@@ -20,6 +20,16 @@ class Board:
         self.check_all() # This method creates all instances of possible attacking squares and pinned pieces
         print(self.white_turn, "after")
 
+        #Initializes castling rights based on rook + king availiabiltiy
+        self.castle = [True, True, True, True]
+        for i in range(8):
+                for j in range(8):
+                    piece = self.board[i][j]
+                    if isinstance(piece, p.Rook):
+                        self.castle[(0, 2)[piece.symbol in m.BLACK_PIECES] + (0, 1)[j == 0]] = piece.moved
+                    elif isinstance(piece, p.King):
+                        self.castle[(0, 2)[piece.symbol in m.BLACK_PIECES]] = piece.moved
+
     def draw_board(self, screen, select_piece, possible_moves, drag: tuple, highlight: tuple):
         """
         Parameters:
@@ -58,6 +68,8 @@ class Board:
                 #draw the dragged object if there is one
                 if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
 
+
+
     def move(self, select_piece, row, col):
         """
         Parameters:
@@ -83,7 +95,7 @@ class Board:
             self.passant = None 
 
         #castling
-        if type(select_piece) is p.King:
+        if isinstance(select_piece, p.King): #used to check the type of the select_piece variable instead of type(select_piece) is p.King
             ix = "KQkq".find(select_piece.symbol)
             # try to move the rook
             if abs(s_pos[1] - col) > 1:
@@ -100,7 +112,7 @@ class Board:
         
         #Check if we need to change for the king/rook (castling purposes)
         select_piece.moved = True #set to true regardless of the try-except block.
-
+        
         #Update piece
         select_piece.update_pos(Vector((row,col)))
 

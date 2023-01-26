@@ -2,9 +2,9 @@ from stockfish import Stockfish
 
 class CPU:
     def __init__(self):
-        self.stockfish = Stockfish(path="/usr/games/stockfish")
+        self.stockfish = Stockfish(path="/opt/homebrew/bin/stockfish")
     
-    def computer_move(self, history):
+    def computer_move(self, history: list) -> str:
         """
         Parameters:
             - player_move: in the form ((from coordinate), (to coordinate))

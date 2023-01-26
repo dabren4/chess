@@ -39,7 +39,7 @@ class King(ChessPiece):
         self.moved = False
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
         while deltas:
@@ -47,9 +47,13 @@ class King(ChessPiece):
             check = cur
             if 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
-                if not check_obj or check_obj.color != self.color and (self.pos[0] + check[0], self.pos[1] + check[1]) not in board.can_attack: #if empty square or attacking piece and not in attack of a piece
-                    possible.append([self.pos + check])
-                    check += cur
+                if (self.pos[0] + check[0], self.pos[1] + check[1]) not in board.can_attack: 
+                    #check if spot is empty, spot is opposite color or we can_attack
+                    if not check_obj or check_obj.color != self.color or can_attack:
+                        #if empty square or attacking piece and not in attack of a piece
+                        possible.append([self.pos + check])
+                        check += cur
+                        
 
         #castling rights
         if not self.moved and not board.check: #can't castle if in check
@@ -67,6 +71,8 @@ class King(ChessPiece):
                     if cur[1] == 0 or cur[1] == 7:
                         #append if rows are clear, end indices can't be other than rook becaues self.castle[ix + i] wouldn't be True
                         possible.append([self.pos + ((0,2), (0,-2))[i]]) 
+        
+        #can't move King to sacrifice King
         return possible
 
 class Queen(ChessPiece):
@@ -75,7 +81,7 @@ class Queen(ChessPiece):
         self.symbol = 'Q' if color == 'white' else 'q'
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         if self in board.pinned: return possible
         deltas = [(1,0), (1,-1), (1, 1), (0, -1), (0, 1), (-1, -1), (-1, 0), (-1, 1)]
@@ -93,9 +99,10 @@ class Queen(ChessPiece):
                 if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
             possible.append(l)
         
-        if check_state:
+        if board.check:
             #want to only return squares that protect the King from attack
-            return [square for sublist in possible for square in sublist if square in board.check_attack]
+            check_attack_set = {square for sublist in board.check_attack for square in sublist}
+            return [[square] for sublist in possible for square in sublist if square in check_attack_set]
         return possible
     
     def search_pin(self, board):
@@ -113,7 +120,6 @@ class Queen(ChessPiece):
                 elif check_obj:
                     break
             if poss:
-                print(poss)
                 while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                     check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
                     if check_obj:
@@ -128,7 +134,7 @@ class Bishop(ChessPiece):
         self.symbol = 'B' if color == 'white' else 'b'
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         if self in board.pinned: return possible
         deltas = [(1,-1), (1, 1), (-1, -1), (-1, 1)]
@@ -145,6 +151,10 @@ class Bishop(ChessPiece):
                 check += cur
                 if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
             possible.append(l)
+        if board.check:
+            #want to only return squares that protect the King from attack
+            check_attack_set = {square for sublist in board.check_attack for square in sublist}
+            return [[square] for sublist in possible for square in sublist if square in check_attack_set]
         return possible
     
     def search_pin(self, board):
@@ -177,7 +187,7 @@ class Rook(ChessPiece):
         self.moved = False
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         #condition if this piece is a pinned piece
         if self in board.pinned: return possible
@@ -197,6 +207,10 @@ class Rook(ChessPiece):
                     break # break after add because we can overtake black
             #add the ray of squares to possible move set
             possible.append(l)
+        if board.check:
+            #want to only return squares that protect the King from attack
+            check_attack_set = {square for sublist in board.check_attack for square in sublist}
+            return [[square] for sublist in possible for square in sublist if square in check_attack_set]
         return possible
 
     def search_pin(self, board):
@@ -231,7 +245,7 @@ class Knight(ChessPiece):
         self.symbol = 'N' if color == 'white' else 'n'
         self.image = pg.transform.scale(pg.image.load(m.PIECE_IMAGES[self.symbol]), (70, 70)).convert_alpha()
     
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         if self in board.pinned: return 
         deltas = [(-1,-2), (-2,-1), (-2, 1), (-1, 2), (1, 2), (2, -1), (2, 1), (1, -2)]
@@ -243,6 +257,10 @@ class Knight(ChessPiece):
                 if not check_obj or (check_obj.color != self.color or can_attack): # if square empty or the piece is not our color or we're checking for squares we can attack next turn
                     possible.append([self.pos + check])
                     check += cur
+        if board.check:
+            #want to only return squares that protect the King from attack
+            check_attack_set = {square for sublist in board.check_attack for square in sublist}
+            return [[square] for sublist in possible for square in sublist if square in check_attack_set]
         return possible
 
 class Pawn(ChessPiece):
@@ -254,7 +272,7 @@ class Pawn(ChessPiece):
     def rep_passant(self):
         return self.translate_to((0, 0), self.pos + ((-1, 0), (1, 0))[self.color == 'white'])[2:]
 
-    def get_possible(self, board, can_attack=False, check_state=False):
+    def get_possible(self, board, can_attack=False):
         possible = []
         if self in board.pinned: return possible
         white = self.color == 'white'
@@ -287,6 +305,10 @@ class Pawn(ChessPiece):
                 possible.append([l_dag])
             if 0 <= l[1] < 8 and board.board[r[0]][r[1]] == board.passant: 
                 possible.append([r_dag])
-        
+
+        if board.check:
+            #want to only return squares that protect the King from attack
+            check_attack_set = {square for sublist in board.check_attack for square in sublist}
+            return [[square] for sublist in possible for square in sublist if square in check_attack_set]
         return possible
         

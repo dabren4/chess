@@ -2,10 +2,8 @@ from soupsieve import select
 import pieces as p
 import main as m
 import pygame as pg
+from final_constants import *
 
-DARK_GREEN = (135, 212, 135)
-LIGHT_YELLOW = (255,255,102)
-LIGHT_GREY = (175,175,175)
 
 class Vector(tuple):
     def __add__(self, a):
@@ -21,14 +19,6 @@ class Board:
 
         self.parse_fen(fen) #sets variables 
         self.check_all() # This method creates all instances of possible attacking squares and pinned pieces
-        
-        for i in range(8):
-                for j in range(8):
-                    piece = self.board[i][j]
-                    if isinstance(piece, p.Rook):
-                        self.castle[(0, 2)[piece.symbol in m.BLACK_PIECES] + (0, 1)[j == 0]] = piece.moved
-                    elif isinstance(piece, p.King):
-                        self.castle[(0, 2)[piece.symbol in m.BLACK_PIECES]] = piece.moved
 
     def draw_board(self, screen: pg.surface, select_piece, possible_moves: set, drag: tuple, highlight: tuple) -> None:
         """
@@ -63,7 +53,8 @@ class Board:
                     pg.draw.circle(screen, LIGHT_GREY, (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
                 
                 # can attack squares
-                if (i, j) in self.can_attack: pg.draw.circle(screen, (255, 0, 0), (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)
+                """if (i, j) in self.can_attack: 
+                    pg.draw.circle(screen, (255, 0, 0), (j * m.SQUARE_SIZE + 40, i * m.SQUARE_SIZE + 40), 10)"""
                 
                 #draw the dragged object if there is one
                 if drag: screen.blit(select_piece.image, (drag[1], drag[0]))
@@ -80,7 +71,6 @@ class Board:
         """
         # has to be in this order otherwise indexing gets messed up
         s_pos = select_piece.pos
-
         #used instead of the pop and insert method previously used
         self.board[s_pos[0]][s_pos[1]] = None 
         #if capture or pawn movement 50 move rule is reset
@@ -113,10 +103,25 @@ class Board:
             ix = (0, 2)[select_piece.symbol in m.BLACK_PIECES] + (0, 1)[s_pos[1] == 0]
             self.castle[ix] = False
         
+        #pawn promotion
+        if isinstance(select_piece, p.Pawn):
+            #check if the pawn is on the last rank
+            if select_piece.pos[0] == (0, 7)[select_piece.color == 'black']:
+                selection = input("What piece would you like to replace your pawn with? \nOptions: \n   1. Queen \n   2. Rook \n   3. Bishop \n   4. Knight \nEnter: ")
+                while selection not in {'1', '2', '3', '4'}:
+                    selection = input("Invalid selection, please try again: ")
+                if selection == '1':
+                    self.board[row][col] = p.Queen(select_piece.color, Vector((row, col)))
+                elif selection == '2':
+                    self.board[row][col] = p.Rook(select_piece.color, Vector((row, col)))
+                elif selection == '3':
+                    self.board[row][col] = p.Bishop(select_piece.color, Vector((row, col)))
+                else:
+                    self.board[row][col] = p.Knight(select_piece.color, Vector((row, col)))
+
         #Check if we need to change for the king/rook (castling purposes)
         select_piece.moved = True #set to true regardless of the try-except block.
         
-
     def check_all(self) -> None:
         """
         This function checks the board for all possible moves for a specified color AFTER each move 
@@ -138,12 +143,12 @@ class Board:
                 #want to find opposite of whose turn it is (want to find possible attack from opponent)
                 if obj and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[not self.white_turn]: 
                     #We are checking List of rays (List of Vectors representing squares extending from the piece) of possible movement for the piece
-                    for ray in obj.get_possible(self, True, ):
+                    for ray in obj.get_possible(self, True):
                         for square in ray:
                             #add the square to can_attack
                             self.can_attack.add(square)
                             #check if the square we are checking contains the opponent king
-                            if isinstance(self.board[square[0]][square[1]], p.King) and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[self.white_turn]: 
+                            if isinstance(self.board[square[0]][square[1]], p.King) and self.board[square[0]][square[1]].symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[self.white_turn]: 
                                 #if it is then we need to realize that we are in check
                                 self.check = True
                                 self.king = self.board[square[0]][square[1]]
@@ -152,18 +157,6 @@ class Board:
                     #we need to check if the opponent is pinning one of our pieces (shouldn't be able to move pinned piece)
                     obj.search_pin(self) 
         
-        #WE WOULD ONLY RUN THIS CHECKER IF KING IS UNDER
-        #checkmate checker
-        #we need to determine if all empty squares adjacent to King are under attack
-        #IF ALL EMPTY SQUARES ADJ TO KING ARE UNDER ATTACK
-            #Look at trying to take out attacking pieces/blocking their attacks
-            #Check the length of check_attack (if > 1 then we know checkmate!)
-            #IF NOT AND LENGTH OF CHECK_ATTACK == 1
-                #Check where your opponents pieces can move after your move (potential overtake or block)
-                #WAYS TO BLOCK: KILL ATTACKER WITH KING, KILL ATTACKER WITH OTHER PIECE, BLOCK ATTACKER WITH OTHER PIECE
-                    #BLOCK OR KILL ATTACKER WITH OTHER PIECE (check whether possible moves can kill or block attacking piece, if they can, then add to possible moves)
-                        #This requires the set of lists of rays
-                    #KILL ATTACKER WITH KING (check whether the piece it is trying to kill can be attacked by another piece, if not add to possible moves) #THIS WILL REQUIRE HAVING BOOLEAN CONDITION ON get_possible (check_condition)
         #checkmate check
         if self.check:
             # check if adjacent squares can be moved to
@@ -189,21 +182,13 @@ class Board:
                 else:
                     self.stalemate = True
                 
-
-
-
-
-
-
-
-
     def parse_fen(self, fen: str) -> None:
         self.board = [['' for _ in range(8)] for _ in range(8)]
         rank, file, segments = 0, 0, fen.split(' ')
 
         #need to initialize castling before we initialize pieces to give possible move set
-        print(segments)
-        s = segments
+        s = segments[2]
+        print("CASTLE FEN", s)
         self.castle = ['K' in s, 'Q' in s, 'k' in s, 'q' in s]
 
         for segment in range(len(segments)):
@@ -259,6 +244,7 @@ class Board:
         #castle
         castle_rep = 'KQkq'
         no_castle = True
+        print("Castling rights are ", self.castle)
         for ix in range(len(castle_rep)):
             if self.castle[ix]: 
                 out += castle_rep[ix]

@@ -1,3 +1,4 @@
+from soupsieve import select
 import pieces as p
 import main as m
 import pygame as pg
@@ -15,8 +16,8 @@ class Board:
         self.white_turn = True
         self.dark_color = dark_color
         self.light_color = light_color
-
-
+        self.fifty_move = 0
+        self.checkmate = self.stalemate = False 
 
         self.parse_fen(fen) #sets variables 
         self.check_all() # This method creates all instances of possible attacking squares and pinned pieces
@@ -82,8 +83,13 @@ class Board:
 
         #used instead of the pop and insert method previously used
         self.board[s_pos[0]][s_pos[1]] = None 
+        #if capture or pawn movement 50 move rule is reset
+        if self.board[row][col] or isinstance(select_piece, p.Pawn): self.fifty_move = 0
+        self.fifty_move += 1
+        #replace with selected piece
         self.board[row][col] = select_piece
-        select_piece.pos = (row, col)
+        #Update piece
+        select_piece.update_pos(Vector((row,col)))
 
         #passant
         if type(self) is p.Pawn and abs(s_pos[0] - row) == 2: 
@@ -110,8 +116,6 @@ class Board:
         #Check if we need to change for the king/rook (castling purposes)
         select_piece.moved = True #set to true regardless of the try-except block.
         
-        #Update piece
-        select_piece.update_pos(Vector((row,col)))
 
     def check_all(self) -> None:
         """
@@ -124,8 +128,9 @@ class Board:
             - The idea with this is to form an idea of where to move pieces in order to save the king
         checkmate: a conditional based on possible moves from proponent's position in response to a check
         """
-        self.can_attack = self.check_attack = self.pinned = set()
-        self.check = self.checkmate = False
+        self.can_attack = self.pinned = set()
+        self.check_attack = []
+        self.check = self.checkmate = self.king = False
 
         for row in range(len(self.board)):
             for col in range(len(self.board[0])):
@@ -133,8 +138,7 @@ class Board:
                 #want to find opposite of whose turn it is (want to find possible attack from opponent)
                 if obj and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[not self.white_turn]: 
                     #We are checking List of rays (List of Vectors representing squares extending from the piece) of possible movement for the piece
-                    print(obj)
-                    for ray in obj.get_possible(self, True):
+                    for ray in obj.get_possible(self, True, ):
                         for square in ray:
                             #add the square to can_attack
                             self.can_attack.add(square)
@@ -142,8 +146,9 @@ class Board:
                             if isinstance(self.board[square[0]][square[1]], p.King) and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[self.white_turn]: 
                                 #if it is then we need to realize that we are in check
                                 self.check = True
-                                #need to add array of squares that lead to the check
-                                self.check_attack.add(ray) 
+                                self.king = self.board[square[0]][square[1]]
+                                #need to add array of squares that lead to the check including the piece itself (we should be able to kill a piece to protect the King!)
+                                self.check_attack.append(ray + [obj.pos]) 
                     #we need to check if the opponent is pinning one of our pieces (shouldn't be able to move pinned piece)
                     obj.search_pin(self) 
         
@@ -159,6 +164,38 @@ class Board:
                     #BLOCK OR KILL ATTACKER WITH OTHER PIECE (check whether possible moves can kill or block attacking piece, if they can, then add to possible moves)
                         #This requires the set of lists of rays
                     #KILL ATTACKER WITH KING (check whether the piece it is trying to kill can be attacked by another piece, if not add to possible moves) #THIS WILL REQUIRE HAVING BOOLEAN CONDITION ON get_possible (check_condition)
+        #checkmate check
+        if self.check:
+            # check if adjacent squares can be moved to
+            if not self.king.get_possible(self):
+                if len(self.check_attack) > 1:
+                    # cannot defend more than two pieces attacking at once and also no squares for King to move to
+                    self.checkmate = True
+                elif len(self.check_attack) == 1:
+                    #need to check all of our pieces to make sure it blocks the ray
+                    ray_check = set(self.check_attack[0])
+                    checkmate_flag = True
+                    for row in range(len(self.board)):
+                        for col in range(len(self.board[0])):
+                            obj = self.board[row][col]
+                            #check if obj is a piece and the color is the player to play
+                            if obj and obj.symbol in (m.BLACK_PIECES, m.WHITE_PIECES)[self.white_turn]:
+                                for ray in obj.get_possible(self):
+                                    for square in ray:
+                                        if square in ray_check:
+                                            checkmate_flag = False
+                    if checkmate_flag:
+                        self.checkmate = True
+                else:
+                    self.stalemate = True
+                
+
+
+
+
+
+
+
 
     def parse_fen(self, fen: str) -> None:
         self.board = [['' for _ in range(8)] for _ in range(8)]

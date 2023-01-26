@@ -44,6 +44,10 @@ class Chess:
         self.color_light = WHITE
         self.fen="r3k2r/4r3/8/8/8/8/8/R3Q2R w KQkq - 0 1" #default value
 
+        
+        #TEST VALUE FOR CHECK SITUATION
+        self.fen = "rnbqk1nr/ppp2ppp/4p3/3p4/1b1P4/N6P/PPP1PPP1/R1BQKBNR w - - 6 4"
+
         #Set options
         while True:
             for k ,v in GAME_OPTIONS.items():
@@ -92,7 +96,7 @@ class Chess:
             
     def p_vs_cpu(self) -> None:
         # Set the size of each square on the board
-        board = b.Board(self.color_dark, self.color_light, self.fen)
+        board = b.Board(self.color_dark, self.color_light)
         cpu = c.CPU()
         history = []
         select_piece = possible_moves = drag_pos = highlight_square =  None
@@ -110,7 +114,7 @@ class Chess:
                             #change select piece into the obj of choice
                             select_piece = obj 
                             #flatten the list of lists into just list of tuples
-                            possible_moves = [square for sublist in select_piece.get_possible(board) for square in sublist]
+                            possible_moves = [square for sublist in select_piece.get_possible(board, False, board.check) for square in sublist]
                     if select_piece:
                         if event.type == pg.MOUSEMOTION:
                             #DRAGGING A PIECE
@@ -134,11 +138,16 @@ class Chess:
                                 board.hmove += 1
                                 #count the full move 
                                 if board.white_turn: board.fmove += 1
+                                print(board.to_fen())
+                                self.check_quit(event, sys)
+
                             # set these to None because we're moving onto next turn
                             possible_moves = select_piece = highlight_square = drag_pos = None 
-                    self.check_quit(event, sys)
+                                
+                                
+                    
             elif not self.pvp and not white_turn:
-                
+
                 #send the history to the cpu
                 move = cpu.computer_move(history[-2:] if len(history) > 1 else history)
                 #append the FEN move to history 
@@ -152,6 +161,15 @@ class Chess:
                 board.hmove += 1
                 board.fmove += 1
             
+            #if checkmate, then stop the game
+            if board.checkmate:
+                print(f"Checkmate! {('White', 'Black')[board.white_turn]} wins!")
+            elif board.stalemate:
+                print("Draw! Stalemate!")
+            # 50 move rule (100 here because we count half rules)
+            elif board.fifty_move > 100:
+                print("Draw! 50 move rule limit reached!")
+
             board.draw_board(self.screen, select_piece, possible_moves, drag_pos, highlight_square)
             pg.display.flip()
 

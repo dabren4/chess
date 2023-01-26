@@ -86,12 +86,16 @@ class Queen(ChessPiece):
             while 0 <= self.pos[0] + check[0] < 8 and 0 <= self.pos[1] + check[1] < 8: #check bounds with compound
                 check_obj = board.board[self.pos[0] + check[0]][self.pos[1] + check[1]]
                 if check_obj and check_obj.color == self.color: 
-                    if check_state: l.append(self.pos + check) #we can attack this piece potentially in next turn (if piece get's taken)
+                    if can_attack: l.append(self.pos + check) #we can attack this piece potentially in next turn (if piece get's taken)
                     break
                 l.append(self.pos + check)
                 check += cur
                 if check_obj and check_obj.color != self.color: break # break after add because we can overtake black
             possible.append(l)
+        
+        if check_state:
+            #want to only return squares that protect the King from attack
+            return [square for sublist in possible for square in sublist if square in board.check_attack]
         return possible
     
     def search_pin(self, board):

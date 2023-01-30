@@ -35,6 +35,7 @@ WHITE_PIECES = {'P', 'N', 'B', 'R', 'Q', 'K'}
 
 #Unit Test FENS
 UNIT_TEST_FENS = {
+    'Checkmate R': "6pk/6p1/8/8/8/8/6Q1/6R1 w - - 0 1", #checkmate with restrictions
     'Castle Pin': "r3k2r/4r3/8/8/8/8/8/R3Q2R w KQkq - 0 1",
     'Pawn Promotion': "8/4P3/8/8/8/8/8/8 w KQkq - 0 1",
     'Default': "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

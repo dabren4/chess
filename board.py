@@ -126,7 +126,9 @@ class Board:
         """
         This function checks the board for all possible moves for a specified color AFTER each move 
         RETURNS SET OF (ROW, COL) THAT SQUARES THAT CURRENT PLAYER CAN ATTACK AND SET OF PINNED PIECES 
-        TO DO Consolidate searches for all pieces so that we don't have two similar blocks 
+
+        TO DO: (board.user_possible_moves)RETURN A DICITONARY THAT RELATES UNIQUE PIECE OBJECT TO POSSIBLE MOVES THAT USER CAN MAKE WITH THAT OBJECT USING INFO ABOUT OPPONENT'S POSSIBLE MOVES
+        We should make a flag for stalemate when we are filling out the user's possible moves dictionary that if we didn't add anything, then it's a stalemate
 
         can_attack: set of squares where the opponent can move and attack from current board position
         check_attack: set of squares which includes both the squares of the pieces that are attacking the king and their ray of attacking squares (Rook, Queen, Bishop)
@@ -156,11 +158,11 @@ class Board:
                                 self.check_attack.append(ray + [obj.pos]) 
                     #we need to check if the opponent is pinning one of our pieces (shouldn't be able to move pinned piece)
                     obj.search_pin(self) 
-        
-        #checkmate check
-        if self.check:
-            # check if adjacent squares can be moved to
-            if not self.king.get_possible(self):
+
+        # check if adjacent squares can be moved to
+        if not self.king.get_possible(self):
+            #checkmate check
+            if self.check:
                 if len(self.check_attack) > 1:
                     # cannot defend more than two pieces attacking at once and also no squares for King to move to
                     self.checkmate = True
@@ -179,16 +181,15 @@ class Board:
                                             checkmate_flag = False
                     if checkmate_flag:
                         self.checkmate = True
-                else:
-                    self.stalemate = True
-                
+        
+
+    
     def parse_fen(self, fen: str) -> None:
         self.board = [['' for _ in range(8)] for _ in range(8)]
         rank, file, segments = 0, 0, fen.split(' ')
 
         #need to initialize castling before we initialize pieces to give possible move set
         s = segments[2]
-        print("CASTLE FEN", s)
         self.castle = ['K' in s, 'Q' in s, 'k' in s, 'q' in s]
 
         for segment in range(len(segments)):

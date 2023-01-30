@@ -14,15 +14,11 @@ class Chess:
         self.color_dark = LIGHT_GREEN
         self.color_light = WHITE
 
-
-
         self.options = ["Player vs. Player", "Player vs. CPU", "Board Color", "Specify FEN", "Exit"]
         self.color_options = {color: ix+1 for ix, color in enumerate(["Purple", "Brown", "Default"])}
         self.screen_width = 640
 
         self.fen= UNIT_TEST_FENS['Checkmate R']
-
-
 
         # Initialize Pygame
         pg.init()
@@ -123,6 +119,21 @@ class Chess:
                 else:
                     text = font.render(option_color, True, (100, 100, 100))
                 self.screen.blit(text, (100, 100 + i * 50))
+
+##TO DO: Make code simpler and more concise:
+#   Check 50 move rule
+#   Make sure that we're not in check (Check all function)
+#   
+#   Ifin check (do the check all)
+#       - We are checking our opponents possible moves
+#       - If in check, check if in checkmate
+#   If we are not in check
+#       - Check all of our possible moves
+#           - Relate in dictionary the unique piece object to a list of list of possible squares that it could move to
+#       - If that list is empty we are in a stalemate
+#   Then we make our move and repeat list
+
+
 
 
     def p_vs_cpu(self) -> None:

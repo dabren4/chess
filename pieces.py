@@ -54,9 +54,6 @@ class King(ChessPiece):
                         possible.append([self.pos + check])
                         check += cur
 
-
-
-
         #castling rights
         if not self.moved and not board.check: #can't castle if in check
             ix = (0,2)[self.symbol in m.BLACK_PIECES]
@@ -105,6 +102,7 @@ class Queen(ChessPiece):
             #want to only return squares that protect the King from attack
             check_attack_set = {square for sublist in board.check_attack for square in sublist}
             return [[square] for sublist in possible for square in sublist if square in check_attack_set]
+        
         return possible
 
     def search_pin(self, board):
